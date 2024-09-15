@@ -9,15 +9,15 @@ def add_task(description):
     tasks.append(task)
     return f'Task "{description}" added.'
 
-# List all tasks
 def list_tasks():
     if not tasks:
         return "No tasks available."
     else:
         task_list = ""
         for index, task in enumerate(tasks, start=1):
-            task_list += f"{index}. {task}\n"
-        return task_list.strip()
+            status = "[✓]" if task.completed else "[✗]"
+            task_list += f"{index}. {task.description} {status}\n"
+        return task_list.strip()  # Strip the last newline
 
 #delete
 def delete_task(task_number):
