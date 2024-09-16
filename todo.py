@@ -1,4 +1,5 @@
 from task import Task
+import json
 
 # Global list to store tasks
 tasks = []
@@ -7,7 +8,9 @@ tasks = []
 def add_task(description):
     task = Task(description)
     tasks.append(task)
+    save_tasks_to_file()  # Save after adding task
     return f'Task "{description}" added.'
+
 
 def list_tasks():
     if not tasks:
@@ -38,6 +41,25 @@ def mark_task_complete(task_number):
     except IndexError:
         return "Invalid task number."
 
+
+def save_tasks_to_file(file_name='tasks.json'):
+    with open(file_name, 'w') as file:
+        task_data = [{'description': task.description, 'completed': task.completed} for task in tasks]
+        json.dump(task_data, file)
+
+def load_tasks_from_file(file_name='tasks.json'):
+    try:
+        with open(file_name, 'r') as file:
+            task_data = json.load(file)
+            for task in task_data:
+                loaded_task = Task(task['description'])
+                loaded_task.completed = task['completed']
+                tasks.append(loaded_task)
+    except FileNotFoundError:
+        # If the file doesn't exist, we start with an empty task list
+        pass
+
+
 # CLI logic moved to a separate function for manual usage
 def run_cli():
     while True:
@@ -61,4 +83,5 @@ def run_cli():
             print("Invalid command.")
             
 if __name__ == "__main__":
+    load_tasks_from_file()
     run_cli()

@@ -1,10 +1,13 @@
 import unittest
-from todo import add_task, list_tasks, mark_task_complete, delete_task, tasks, Task
+from todo import add_task, list_tasks, mark_task_complete, delete_task, tasks, Task,save_tasks_to_file
+from unittest.mock import mock_open, patch
+
 
 class TestTaskManager(unittest.TestCase):
 
     def setUp(self):
         tasks.clear()
+    
 
     def test_add_task(self):
         result = add_task("Buy groceries")
@@ -24,7 +27,7 @@ class TestTaskManager(unittest.TestCase):
         result = list_tasks()
         expected_result = "1. Buy groceries [✗]\n2. Walk the dog [✗]"
         self.assertEqual(result, expected_result)
-"""
+
     def test_mark_task_complete_valid(self):
         add_task("Buy groceries")
         result = mark_task_complete(1)
@@ -60,6 +63,17 @@ class TestTaskManager(unittest.TestCase):
         result = list_tasks()
         expected_result = "1. Task 1 [✗]\n2. Task 3 [✗]"  
         self.assertEqual(result, expected_result)
-      """
+    
+    @patch("builtins.open", new_callable=mock_open)
+    def test_add_task_and_save(self, mock_file):
+  
+        add_task("Buy groceries")
+
+   
+        mock_file.assert_called_once_with('tasks.json', 'w')
+
+
+
+
 if __name__ == "__main__":
     unittest.main()
