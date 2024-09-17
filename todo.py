@@ -6,21 +6,31 @@ tasks = []
 
 # add tasks
 def add_task(description):
-    task = Task(description)
+    priority = input("Enter task priority (Low, Medium, High, default is Medium): ").strip().capitalize()
+
+    if priority not in ["Low", "Medium", "High"]:
+        print("Invalid priority, setting to default (Medium).")
+        priority = "Medium"
+    
+    task = Task(description,priority)
     tasks.append(task)
     save_tasks_to_file()  # Save after adding task
-    return f'Task "{description}" added.'
+    return f'Task "{description}" added with priority {priority}'
 
 
 def list_tasks():
     if not tasks:
         return "No tasks available."
     else:
+        tasks.sort(key=lambda task: ["High", "Medium", "Low"].index(task.priority))  # Sort by priority
+
         task_list = ""
         for index, task in enumerate(tasks, start=1):
             status = "[✓]" if task.completed else "[✗]"
-            task_list += f"{index}. {task.description} {status}\n"
+            task_list += f"{index}. {task.description} {status} (Priority: {task.priority})\n"
+
         return task_list.strip()  # Strip the last newline
+
 
 #delete
 def delete_task(task_number):
@@ -44,7 +54,7 @@ def mark_task_complete(task_number):
 
 def save_tasks_to_file(file_name='tasks.json'):
     with open(file_name, 'w') as file:
-        task_data = [{'description': task.description, 'completed': task.completed} for task in tasks]
+        task_data = [{'description': task.description, 'completed': task.completed, 'priority': task.priority} for task in tasks]
         json.dump(task_data, file)
 
 def load_tasks_from_file(file_name='tasks.json'):
@@ -54,6 +64,7 @@ def load_tasks_from_file(file_name='tasks.json'):
             for task in task_data:
                 loaded_task = Task(task['description'])
                 loaded_task.completed = task['completed']
+                loaded_task.priority = task['priority']
                 tasks.append(loaded_task)
     except FileNotFoundError:
         # If the file doesn't exist, we start with an empty task list

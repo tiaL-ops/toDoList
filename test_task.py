@@ -64,6 +64,9 @@ class TestTaskManager(unittest.TestCase):
         expected_result = "1. Task 1 [✗]\n2. Task 3 [✗]"  
         self.assertEqual(result, expected_result)
     
+   
+
+    
     @patch("builtins.open", new_callable=mock_open)
     def test_add_task_and_save(self, mock_file):
   
