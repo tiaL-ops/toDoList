@@ -44,7 +44,7 @@ def list_tasks():
     else:
         today = datetime.now()
         task_list = ""
-        task_counter = 1  # This will ensure continuous numbering across categories
+        task_counter = 1  # Ensure continuous numbering across all tasks
 
         tasks_by_category = {}
         # Group tasks by category
@@ -53,7 +53,7 @@ def list_tasks():
                 tasks_by_category[task.category] = []
             tasks_by_category[task.category].append(task)
 
-        # Loop through categories and display tasks
+        # Loop through all categories and display tasks without resetting the counter
         for category, tasks_in_category in tasks_by_category.items():
             task_list += f"\nCategory: {category}\n"
             for task in tasks_in_category:
@@ -69,8 +69,6 @@ def list_tasks():
                 task_counter += 1  # Increment the counter after each task
 
         return task_list.strip()
-
-
 
 #delete
 def delete_task(task_number):
@@ -114,15 +112,20 @@ def load_tasks_from_file(file_name='tasks.json'):
                 deadline_str = task.get('deadline')  
                 deadline = datetime.strptime(deadline_str, '%Y-%m-%d') if deadline_str else None
                 
+                # If the task does not have a 'category' field, it defaults to 'General'
+                category = task.get('category', 'General')
+
+                # Initialize Task object with loaded data
                 loaded_task = Task(
                     task['description'],
-                    priority=task.get('priority', 'Medium'),
-                    category=task.get('category', 'General'),  #
+                    priority=task.get('priority', 'Medium'),  # Default to 'Medium' if missing
+                    category=category,  # Default to 'General' if 'category' is missing
                     deadline=deadline
                 )
-                loaded_task.completed = task.get('completed', False)
-                tasks.append(loaded_task)
+                loaded_task.completed = task.get('completed', False)  
+                tasks.append(loaded_task)  
     except FileNotFoundError:
+        # If the file doesn't exist, we start with an empty task list
         pass
 
 
