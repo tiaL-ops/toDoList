@@ -13,6 +13,11 @@ def add_task(description):
         print("Invalid priority, setting to default (Medium).")
         priority = "Medium"
     
+    # Ask for category input
+    category = input("Enter task category (default is General): ").strip().capitalize()
+    if not category:
+        category = "General"
+    
     # Ask for deadline input
     deadline_input = input("Enter deadline (YYYY-MM-DD) or press Enter to skip: ").strip()
 
@@ -26,7 +31,7 @@ def add_task(description):
     else:
         deadline = None
 
-    task = Task(description, priority=priority, deadline=deadline)
+    task = Task(description, priority=priority, deadline=deadline,category=category)
     tasks.append(task)
     save_tasks_to_file()  # Save the tasks after adding a new one
     return f'Task "{description}" added with priority {priority} and deadline {deadline_input if deadline else "None"}.'
@@ -37,21 +42,34 @@ def list_tasks():
     if not tasks:
         return "No tasks available."
     else:
+        today = datetime.now()
         task_list = ""
-        today = datetime.now()  # Get the current date and time
+        task_counter = 1  # This will ensure continuous numbering across categories
 
-        for index, task in enumerate(tasks, start=1):
-            status = "[✓]" if task.completed else "[✗]"
-            deadline_str = task.deadline.strftime('%Y-%m-%d') if task.deadline else "No deadline"
-            overdue_warning = ""
+        tasks_by_category = {}
+        # Group tasks by category
+        for task in tasks:
+            if task.category not in tasks_by_category:
+                tasks_by_category[task.category] = []
+            tasks_by_category[task.category].append(task)
 
-            # Check if the task is overdue
-            if task.deadline and task.deadline < today and not task.completed:
-                overdue_warning = " (OVERDUE!)"
-            
-            task_list += f"{index}. {task.description} {status} (Priority: {task.priority}) Deadline: {deadline_str}{overdue_warning}\n"
+        # Loop through categories and display tasks
+        for category, tasks_in_category in tasks_by_category.items():
+            task_list += f"\nCategory: {category}\n"
+            for task in tasks_in_category:
+                status = "[✓]" if task.completed else "[✗]"
+                deadline_str = task.deadline.strftime('%Y-%m-%d') if task.deadline else "No deadline"
+                overdue_warning = ""
 
-        return task_list.strip()  # Strip the last newline
+                # Check if the task is overdue
+                if task.deadline and task.deadline < today and not task.completed:
+                    overdue_warning = " (OVERDUE!)"
+
+                task_list += f"  {task_counter}. {task.description} {status} (Priority: {task.priority}) Deadline: {deadline_str}{overdue_warning}\n"
+                task_counter += 1  # Increment the counter after each task
+
+        return task_list.strip()
+
 
 
 #delete
@@ -81,6 +99,7 @@ def save_tasks_to_file(file_name='tasks.json'):
                 'description': task.description, 
                 'completed': task.completed, 
                 'priority': task.priority,
+                'category': task.category,  # Include category
                 'deadline': task.deadline.strftime('%Y-%m-%d') if task.deadline else None
             } for task in tasks
         ]
@@ -92,20 +111,18 @@ def load_tasks_from_file(file_name='tasks.json'):
         with open(file_name, 'r') as file:
             task_data = json.load(file)
             for task in task_data:
-                # Handle cases where the 'deadline' key might be missing in older files
                 deadline_str = task.get('deadline')  
                 deadline = datetime.strptime(deadline_str, '%Y-%m-%d') if deadline_str else None
                 
-                # Initialize Task object with loaded data
                 loaded_task = Task(
                     task['description'],
-                    priority=task.get('priority', 'Medium'),  # Default to 'Medium' if missing
+                    priority=task.get('priority', 'Medium'),
+                    category=task.get('category', 'General'),  #
                     deadline=deadline
                 )
-                loaded_task.completed = task.get('completed', False)  
-                tasks.append(loaded_task)  
+                loaded_task.completed = task.get('completed', False)
+                tasks.append(loaded_task)
     except FileNotFoundError:
-        # If the file doesn't exist, we start with an empty task list
         pass
 
 

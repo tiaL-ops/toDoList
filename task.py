@@ -1,10 +1,12 @@
 #from datetime import datetime
 class Task:
-    def __init__(self, description,priority="Medium",deadline = None):
+    def __init__(self, description,priority="Medium",deadline = None,category="General"):
         self.description = description
+        
         self.completed = False
         self.priority=priority
         self.deadline = deadline
+        self.category = category
 
     def mark_complete(self):
         self.completed = True
