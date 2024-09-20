@@ -1,52 +1,65 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 
-const TodoForm = ({ addTask }) => {
+const ToDoForm = () => {
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('Medium');
   const [category, setCategory] = useState('General');
   const [deadline, setDeadline] = useState('');
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = (event) => {
+    event.preventDefault();
 
-    const newTask = { description, priority, category, deadline };
+    const taskData = {
+      description,
+      priority,
+      category,
+      deadline
+    };
 
-    axios.post('http://127.0.0.1:5000/tasks', newTask)
-      .then(response => {
-        addTask(newTask);
+    fetch('/api/tasks', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(taskData),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log('Success:', data);
+        // Clear the form after successful submission
         setDescription('');
         setPriority('Medium');
         setCategory('General');
         setDeadline('');
       })
-      .catch(error => {
-        console.error('There was an error adding the task!', error);
+      .catch((error) => {
+        console.error('Error:', error);
       });
   };
 
   return (
     <form onSubmit={handleSubmit}>
-      <input 
-        type="text" 
-        value={description} 
-        onChange={e => setDescription(e.target.value)} 
-        placeholder="Task Description" 
-        required 
+      <input
+        type="text"
+        placeholder="Task description"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        required
       />
-      <select value={priority} onChange={e => setPriority(e.target.value)}>
-        <option value="Low">Low</option>
-        <option value="Medium">Medium</option>
-        <option value="High">High</option>
-      </select>
-      <input 
-        type="date" 
-        value={deadline} 
-        onChange={e => setDeadline(e.target.value)} 
+      <input
+        type="text"
+        placeholder="Category"
+        value={category}
+        onChange={(e) => setCategory(e.target.value)}
+      />
+      <input
+        type="date"
+        value={deadline}
+        onChange={(e) => setDeadline(e.target.value)}
       />
       <button type="submit">Add Task</button>
     </form>
   );
 };
 
-export default TodoForm;
+export default ToDoForm;

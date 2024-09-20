@@ -1,33 +1,8 @@
 .App {
     text-align: center;
-    font-family: Arial, sans-serif;
-    margin: 20px;
-  }
-  
-  .todo-list ul {
-    list-style-type: none;
-    padding: 0;
-  }
-  
-  .todo-list li {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px;
-    margin: 5px 0;
-    background-color: #f4f4f4;
-    border-radius: 5px;
   }
   
   button {
-    margin-left: 10px;
-    background-color: #4CAF50;
-    border: none;
-    color: white;
-    padding: 5px 10px;
-    cursor: pointer;
-  }
-  
-  button:hover {
-    background-color: #45a049;
+    margin: 5px;
   }
   
