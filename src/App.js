@@ -15,7 +15,7 @@ function App() {
   }, []);
 
   const addTask = async (task) => {
-    const response = await fetch("/tasks", {
+    const response = await fetch("/api/tasks", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

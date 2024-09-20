@@ -27,19 +27,25 @@ def get_tasks():
 
 
 # Add a task
-@app.route('/tasks', methods=['POST'])
+@app.route('/api/tasks', methods=['POST'])
 def create_task():
+   
+
     data = request.get_json()
+    print(data)
     description = data.get('description')
     priority = data.get('priority', 'Medium')
     category = data.get('category', 'General')
     deadline = data.get('deadline', None)
+
     if deadline:
         deadline = datetime.strptime(deadline, '%Y-%m-%d')
-    result = add_task(description, priority, category, deadline)
-    return jsonify(result)
 
-# Delete a task
+    result = add_task(description, priority, category, deadline)
+    
+    return jsonify({"message": result, "status": "success"}), 201
+
+#Delete tasks
 @app.route('/tasks/<int:task_id>', methods=['DELETE'])
 def delete_task_api(task_id):
     result = delete_task(task_id)
