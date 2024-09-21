@@ -53,6 +53,7 @@ def create_task():
     return jsonify({"message": result, "status": "success"}), 201
 
 
+
 # Delete a task
 @app.route('/tasks/<int:task_id>', methods=['DELETE'])
 def delete_task_api(task_id):
