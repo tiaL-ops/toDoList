@@ -1,28 +1,40 @@
 import React, { useState, useEffect } from 'react';
+import { io } from 'socket.io-client';  // Import socket.io-client
 
 const ToDoList = () => {
   const [tasks, setTasks] = useState([]);
 
-  // Function to fetch tasks
-  const fetchTasks = () => {
-    fetch('http://127.0.0.1:5000/api/tasks')  // Full URL for Flask API
-      .then(response => response.json())
-      .then(data => {
-        setTasks(data.tasks);  // Make sure data.tasks is correctly accessed
-      })
-      .catch(error => console.error('Error fetching tasks:', error));
-  };
-
-  // Fetch tasks on mount and set polling to keep it updated
   useEffect(() => {
-    // Fetch tasks initially
-    fetchTasks();
+    
+    const socket = io('http://127.0.0.1:5000');
 
-    // Set up polling every 5 seconds (5000 milliseconds)
-    const intervalId = setInterval(fetchTasks, 5000);
+    // Fetch initial tasks from REST API
+    fetch('http://127.0.0.1:5000/api/tasks')
+      .then(response => response.json())
+      .then(data => setTasks(data.tasks))
+      .catch(error => console.error('Error fetching tasks:', error));
 
-    // Cleanup: Clear the interval when the component unmounts
-    return () => clearInterval(intervalId);
+    // Listen for new task updates
+    socket.on('task_update', (newTask) => {
+      setTasks(prevTasks => [...prevTasks, newTask]);  // Add new task to task list
+    });
+
+    // Listen for task deletion
+    socket.on('task_deleted', ({ task_id }) => {
+      setTasks(prevTasks => prevTasks.filter((task, index) => index !== task_id));
+    });
+
+    // Listen for task completion
+    socket.on('task_completed', ({ task_id }) => {
+      setTasks(prevTasks => prevTasks.map((task, index) =>
+        index === task_id ? { ...task, completed: true } : task
+      ));
+    });
+
+    // Cleanup WebSocket connection on component unmount
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   return (

@@ -1,12 +1,12 @@
 from flask import Flask, request, jsonify
 from datetime import datetime
-from todo import tasks,add_task, list_tasks, delete_task, mark_task_complete, load_tasks_from_file
+from todo import tasks, add_task, delete_task, mark_task_complete, load_tasks_from_file
 from flask_cors import CORS
-
-
+from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
-CORS(app)
+CORS(app)  # Cross-Origin Resource Sharing (CORS)
+socketio = SocketIO(app, cors_allowed_origins="*")  # Initialize SocketIO with CORS enabled
 
 # Load tasks from the file when the app starts
 load_tasks_from_file()
@@ -29,10 +29,7 @@ def get_tasks():
 # Add a task
 @app.route('/api/tasks', methods=['POST'])
 def create_task():
-   
-
     data = request.get_json()
-    print(data)
     description = data.get('description')
     priority = data.get('priority', 'Medium')
     category = data.get('category', 'General')
@@ -42,20 +39,38 @@ def create_task():
         deadline = datetime.strptime(deadline, '%Y-%m-%d')
 
     result = add_task(description, priority, category, deadline)
+
+   
+    new_task = {
+        'description': description,
+        'priority': priority,
+        'category': category,
+        'deadline': deadline.strftime('%Y-%m-%d') if deadline else None,
+        'completed': False
+    }
+    socketio.emit('task_update', new_task)  # Emit 'task_update' event
     
     return jsonify({"message": result, "status": "success"}), 201
 
-#Delete tasks
+
+# Delete a task
 @app.route('/tasks/<int:task_id>', methods=['DELETE'])
 def delete_task_api(task_id):
     result = delete_task(task_id)
+
+    socketio.emit('task_deleted', {'task_id': task_id})
+
     return jsonify(result)
 
 # Mark a task as complete
 @app.route('/tasks/<int:task_id>/complete', methods=['PUT'])
 def complete_task(task_id):
     result = mark_task_complete(task_id)
+
+   
+    socketio.emit('task_completed', {'task_id': task_id})
+
     return jsonify(result)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    socketio.run(app, debug=True)
