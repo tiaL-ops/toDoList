@@ -15,32 +15,42 @@ const ToDoList = () => {
       .then(data => setTasks(data.tasks))
       .catch(error => console.error('Error fetching tasks:', error));
 
+      socket.on('connect', () => {
+        console.log('Connected to Socket.io server');  // Log when connected
+      });
+    
+      socket.on('disconnect', () => {
+        console.log('Disconnected from Socket.io server');  // Log when disconnected
+      });
+
     socket.on('task_update', (newTask) => {
       setTasks(prevTasks => [...prevTasks, newTask]);
     });
 
     socket.on('task_deleted', ({ task_id }) => {
-      setTasks(prevTasks => prevTasks.filter(task => task.id !== task_id));
+      console.log(`GIRL deleted with ID: ${task_id}`);  // Log for debugging
+      setTasks(prevTasks => prevTasks.filter(task => task.id !== task_id));  // Filter out the deleted task
     });
     
-
+    
+   
     return () => {
       socket.disconnect();
     };
   }, []);
 
-  // Function to delete a task
-  const deleteTask = (task_id) => {
-    fetch(`http://127.0.0.1:5000/api/tasks/${task_id}`, {
-      method: 'DELETE',
+ const deleteTask = (task_id) => {
+  fetch(`http://127.0.0.1:5000/api/tasks/${task_id}`, {
+    method: 'DELETE',
+  })
+    .then(response => response.json())
+    .then(data => {
+      console.log('Task deleted:', data.message);
+      setTasks(prevTasks => prevTasks.filter(task => task.id !== task_id));
     })
-      .then(response => response.json())
-      .then(data => {
-        console.log('Task deleted:', data.message);
-        setSelectedTask(null);  // Deselect the task after deletion
-      })
-      .catch(error => console.error('Error deleting task:', error));
-  };
+    .catch(error => console.error('Error deleting task:', error));
+};
+
 
   // Handle task click (to reveal delete option)
   const handleTaskClick = (task_id) => {
