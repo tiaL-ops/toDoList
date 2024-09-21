@@ -16,6 +16,7 @@ load_tasks_from_file()
 def get_tasks():
     task_data = [
         {
+            'id': task.id,
             'description': task.description, 
             'completed': task.completed, 
             'priority': task.priority,
@@ -62,6 +63,8 @@ def delete_task_api(task_id):
     socketio.emit('task_deleted', {'task_id': task_id})
 
     return jsonify(result)
+
+
 
 # Mark a task as complete
 @app.route('/tasks/<int:task_id>/complete', methods=['PUT'])

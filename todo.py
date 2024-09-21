@@ -1,7 +1,8 @@
+
 from task import Task
 from datetime import datetime
 import json
-
+import uuid 
 # Global list to store tasks
 tasks = []
 
@@ -9,8 +10,8 @@ tasks = []
 def add_task(description, priority="Medium", category="General", deadline=None):
     task = Task(description, priority=priority, deadline=deadline, category=category)
     tasks.append(task)
-    save_tasks_to_file()  
-    return f'Task "{description}" added with priority {priority} and deadline {deadline if deadline else "None"}.'
+    save_tasks_to_file()
+    return f'Task "{description}" added with priority {priority} and deadline {deadline if deadline else "None"} \n added with ID {task.id}.'
 
 def list_tasks():
     if not tasks:
@@ -63,7 +64,7 @@ def mark_task_complete(task_number):
 def save_tasks_to_file(file_name='tasks.json'):
     with open(file_name, 'w') as file:
         task_data = [
-            {
+            {   'id': task.id,
                 'description': task.description, 
                 'completed': task.completed, 
                 'priority': task.priority,
@@ -78,16 +79,29 @@ def load_tasks_from_file(file_name='tasks.json'):
         with open(file_name, 'r') as file:
             task_data = json.load(file)
             for task in task_data:
+                # Load the deadline and other task attributes
                 deadline_str = task.get('deadline')
                 deadline = datetime.strptime(deadline_str, '%Y-%m-%d') if deadline_str else None
                 category = task.get('category', 'General')
+                
+                # Create a new task object
                 loaded_task = Task(
                     task['description'],
                     priority=task.get('priority', 'Medium'),
                     category=category,
                     deadline=deadline
                 )
+                
+                # Check if the task has an ID, if not, assign a new unique ID
+                loaded_task.id = task.get('id') if task.get('id') else str(uuid.uuid4())
                 loaded_task.completed = task.get('completed', False)
+                
+                # Add the task to the global task list
                 tasks.append(loaded_task)
+
+        
+        #save_tasks_to_file()
+
     except FileNotFoundError:
         pass
+
