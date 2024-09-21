@@ -1,8 +1,90 @@
+/* Overall app container */
 .App {
-    text-align: center;
+  text-align: center;
+  font-family: 'Arial', sans-serif;
+  background-color: #f4f7fa;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+/* Form styling */
+form {
+  background-color: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Input fields */
+input[type="text"], input[type="date"], select {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.3s ease;
+}
+
+input[type="text"]:focus, input[type="date"]:focus, select:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+/* Button styling */
+button {
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: #007bff;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+/* Dropdown styling */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: white;
+  cursor: pointer;
+}
+
+/* General input margin */
+input, select {
+  margin-bottom: 10px;
+}
+
+div {
+  text-align: left;
+}
+
+/* Media query for smaller screens */
+@media (max-width: 600px) {
+  form {
+    padding: 15px;
+    max-width: 90%; 
   }
-  
+
   button {
-    margin: 5px;
+    font-size: 14px;
   }
-  
+
+  input[type="text"], input[type="date"], select {
+    font-size: 14px; 
+  }
+}
