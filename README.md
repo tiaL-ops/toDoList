@@ -12,6 +12,29 @@ This is a simple ToDo List application that allows users to add, view, and manag
 - API built with Flask to handle task management.
 
 ---
+## Project timelines.
+
+## Project Timelines
+
+| **Day** | **Objective**                               | **Completed**                                  | **Technical Details / Notes**                                                                              |
+|---------|---------------------------------------------|------------------------------------------------|------------------------------------------------------------------------------------------------------------|
+| **1**   | Set Up and Basic Task Addition, Git Initiation | ✅ Initialized project, added task creation     | - Initialized the project with Git for version control.                                                    |
+|         |                                              |                                                | - Implemented basic task creation using the `Task` class.                                                  |
+|         |                                              |                                                | - Used properties like `description` and `completed` to manage tasks.                                      |
+| **2**   | View, Mark Complete, and Delete Tasks       | ✅ Added view, mark complete, and delete features | - Developed `mark_task_complete()` and `delete_task()` functions.                                           |
+|         |                                              |                                                | - Implemented task viewing, marking tasks as complete, and deleting tasks from the global task list.        |
+|         |                                              |                                                | - Debugged unit tests for task completion and deletion.                                                     |
+| **3**   | Save and Load Tasks (File Persistence)      | ✅ Implemented file persistence with JSON       | - Created `save_tasks_to_file()` and `load_tasks_from_file()` for task persistence in a JSON file.          |
+|         |                                              |                                                | - Fixed task listing functionality to load tasks from the JSON file.                                       |
+| **4**   | Task Priorities                             | ✅ Added task priority feature                  | - Introduced task prioritization (Low, Medium, High) and updated the `Task` class.                         |
+|         |                                              |                                                | - Task list can now be sorted by priority and priorities are considered during task addition.               |
+| **5**   | Task Deadlines and Alerts                   | ✅ Added deadlines and sorted by timestamp      | - Added `deadline` field to the `Task` class to track due dates.                                           |
+|         |                                              |                                                | - Tasks are now sorted by deadline, and overdue tasks can be highlighted.                                   |
+| **6**   | Frontend with React                         | ✅ Integrated React for frontend                | - Rebuilt the frontend using React for better UI and state management.                                      |
+|         |                                              |                                                | - Created `ToDoForm` for task addition and `ToDoList` to display and manage tasks.                          |
+| **7**   | WebSocket for Real-time Updates             | ✅ Added WebSocket support for real-time updates| - Integrated WebSocket (Socket.io) to enable real-time task creation and deletion.                          |
+|         |                                              |                                                | - Frontend now updates tasks in real time without page refresh.                                             |
+
 
 ## Prerequisites
 
