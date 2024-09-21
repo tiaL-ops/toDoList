@@ -47,6 +47,13 @@ const ToDoForm = () => {
         onChange={(e) => setDescription(e.target.value)}
         required
       />
+       <div>
+        <select value={priority} onChange={(e) => setPriority(e.target.value)}>
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+      </div>
       <input
         type="text"
         placeholder="Category"

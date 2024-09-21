@@ -37,6 +37,8 @@ const AddTaskForm = ({ onTaskAdded }) => {
     setCategory('General');
     setDeadline('');
   };
+  
+  
 
   return (
     <form onSubmit={handleSubmit}>
@@ -49,13 +51,9 @@ const AddTaskForm = ({ onTaskAdded }) => {
           required
         />
       </div>
-      <div>
-        <select value={priority} onChange={(e) => setPriority(e.target.value)}>
-          <option value="High">High</option>
-          <option value="Medium">Medium</option>
-          <option value="Low">Low</option>
-        </select>
-      </div>
+
+    
+
       <div>
         <input
           type="text"
@@ -65,12 +63,22 @@ const AddTaskForm = ({ onTaskAdded }) => {
         />
       </div>
       <div>
+        <select value={priority} onChange={(e) => setPriority(e.target.value)}>
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+      </div>
+
+      <div>
         <input
           type="date"
           value={deadline}
           onChange={(e) => setDeadline(e.target.value)}
         />
       </div>
+      
+
       <button type="submit">Add Task</button>
     </form>
   );
