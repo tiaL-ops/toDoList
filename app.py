@@ -56,13 +56,12 @@ def create_task():
 
 
 # Delete a task
-@app.route('/tasks/<int:task_id>', methods=['DELETE'])
+@app.route('/api/tasks/<task_id>', methods=['DELETE'])
 def delete_task_api(task_id):
-    result = delete_task(task_id)
-
-    socketio.emit('task_deleted', {'task_id': task_id})
-
-    return jsonify(result)
+    result = delete_task(task_id)  # Use task_id to delete the task
+    if result.startswith("Task not found"):
+        return jsonify({"message": result, "status": "error"}), 404
+    return jsonify({"message": result, "status": "success"})
 
 
 

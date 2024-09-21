@@ -20,8 +20,9 @@ const ToDoList = () => {
     });
 
     socket.on('task_deleted', ({ task_id }) => {
-      setTasks(prevTasks => prevTasks.filter((task, index) => index !== task_id));
+      setTasks(prevTasks => prevTasks.filter(task => task.id !== task_id));
     });
+    
 
     return () => {
       socket.disconnect();

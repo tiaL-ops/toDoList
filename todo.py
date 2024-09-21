@@ -43,12 +43,16 @@ def list_tasks():
         return task_list.strip()
 
 # delete
-def delete_task(task_number):
-    try:
-        task = tasks.pop(task_number - 1)
-        return f'Task "{task.description}" deleted.'
-    except IndexError:
-        return "Invalid task number."
+def delete_task(task_id):
+    # Find the task by its unique ID
+    task_to_delete = next((task for task in tasks if task.id == task_id), None)
+    if task_to_delete:
+        tasks.remove(task_to_delete)
+        save_tasks_to_file()  
+        return f'Task "{task_to_delete.description}" deleted.'
+    else:
+        return "Task not found."
+
 
 # Mark Complete
 def mark_task_complete(task_number):
