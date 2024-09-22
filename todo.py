@@ -1,111 +1,98 @@
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from db.models import Task
+import datetime
+import json 
+# Set up SQLite database connection
+engine = create_engine('sqlite:///tasks.db')
+Session = sessionmaker(bind=engine)
+session = Session()
 
-from task import Task
-from datetime import datetime
-import json
-import uuid 
-# Global list to store tasks
-tasks = []
-
-# add tasks
+tasks=[]
+# Add a new task to the database
 def add_task(description, priority="Medium", category="General", deadline=None):
-    task = Task(description, priority=priority, deadline=deadline, category=category)
-    tasks.append(task)
-    save_tasks_to_file()
-    return f'Task "{description}" added with priority {priority} and deadline {deadline if deadline else "None"} \n added with ID {task.id}.'
+    new_task = Task(description=description, priority=priority, deadline=deadline, completed=False)
+    session.add(new_task)
+    session.commit()
+    return f'Task "{description}" added with priority {priority} and deadline {deadline if deadline else "None"}.'
 
+# List all tasks from the database
 def list_tasks():
-    if not tasks:
+    all_tasks = session.query(Task).all()
+
+    if not all_tasks:
         return "No tasks available."
-    else:
-        today = datetime.now()
-        task_list = ""
-        task_counter = 1  
 
-        tasks_by_category = {}
-        for task in tasks:
-            if task.category not in tasks_by_category:
-                tasks_by_category[task.category] = []
-            tasks_by_category[task.category].append(task)
+    today = datetime.datetime.now()
+    task_list = ""
+    task_counter = 1
 
-        for category, tasks_in_category in tasks_by_category.items():
-            task_list += f"\nCategory: {category}\n"
-            for task in tasks_in_category:
-                status = "[✓]" if task.completed else "[✗]"
-                deadline_str = task.deadline.strftime('%Y-%m-%d') if task.deadline else "No deadline"
-                overdue_warning = ""
+    tasks_by_category = {}
+    for task in all_tasks:
+        if task.category not in tasks_by_category:
+            tasks_by_category[task.category] = []
+        tasks_by_category[task.category].append(task)
 
-                if task.deadline and task.deadline < today and not task.completed:
-                    overdue_warning = " (OVERDUE!)"
+    for category, tasks_in_category in tasks_by_category.items():
+        task_list += f"\nCategory: {category}\n"
+        for task in tasks_in_category:
+            status = "[✓]" if task.completed else "[✗]"
+            deadline_str = task.deadline.strftime('%Y-%m-%d') if task.deadline else "No deadline"
+            overdue_warning = ""
 
-                task_list += f"  {task_counter}. {task.description} {status} (Priority: {task.priority}) Deadline: {deadline_str}{overdue_warning}\n"
-                task_counter += 1  # Increment the counter after each task
+            if task.deadline and task.deadline < today and not task.completed:
+                overdue_warning = " (OVERDUE!)"
 
-        return task_list.strip()
+            task_list += f"  {task_counter}. {task.description} {status} (Priority: {task.priority}) Deadline: {deadline_str}{overdue_warning}\n"
+            task_counter += 1
 
-# delete
+    return task_list.strip()
+
+# Delete a task by its ID
 def delete_task(task_id):
-    # Find the task by its unique ID
-    task_to_delete = next((task for task in tasks if task.id == task_id), None)
+    task_to_delete = session.query(Task).filter_by(id=task_id).first()
+
     if task_to_delete:
-        tasks.remove(task_to_delete)
-        save_tasks_to_file()  
+        session.delete(task_to_delete)
+        session.commit()
         return f'Task "{task_to_delete.description}" deleted.'
     else:
         return "Task not found."
 
-
-# Mark Complete
-def mark_task_complete(task_number):
-    try:
-        task = tasks[task_number - 1]
+# Mark a task as complete
+def mark_task_complete(task_id):
+    task = session.query(Task).filter_by(id=task_id).first()
+    
+    if task:
         if task.completed:
             return f'Task "{task.description}" is already completed.'
-        task.mark_complete()
+        
+        task.completed = True
+        task.completed_on = datetime.datetime.now()
+        session.commit()
+        
         return f'Task "{task.description}" marked as complete.'
-    except IndexError:
-        return "Invalid task number."
-
-def save_tasks_to_file(file_name='tasks.json'):
-    with open(file_name, 'w') as file:
-        task_data = [
-            {   'id': task.id,
-                'description': task.description, 
-                'completed': task.completed, 
-                'priority': task.priority,
-                'category': task.category,
-                'deadline': task.deadline.strftime('%Y-%m-%d') if task.deadline else None
-            } for task in tasks
-        ]
-        json.dump(task_data, file)
+    else:
+        return "Task not found."
 
 def load_tasks_from_file(file_name='tasks.json'):
     try:
         with open(file_name, 'r') as file:
-            task_data = json.load(file)
+            task_data = json.load(file)  # json module is now available
             for task in task_data:
-                # Load the deadline and other task attributes
                 deadline_str = task.get('deadline')
                 deadline = datetime.strptime(deadline_str, '%Y-%m-%d') if deadline_str else None
                 category = task.get('category', 'General')
-                
-                # Create a new task object
+
                 loaded_task = Task(
                     task['description'],
                     priority=task.get('priority', 'Medium'),
                     category=category,
                     deadline=deadline
                 )
-                
-                # Check if the task has an ID, if not, assign a new unique ID
+
                 loaded_task.id = task.get('id') if task.get('id') else str(uuid.uuid4())
                 loaded_task.completed = task.get('completed', False)
-                
-                # Add the task to the global task list
                 tasks.append(loaded_task)
-
-        
-        #save_tasks_to_file()
-
     except FileNotFoundError:
         pass
-
