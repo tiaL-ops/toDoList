@@ -1,8 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from db.models import Task
-import datetime
+from datetime import datetime
 import json 
+import uuid
 # Set up SQLite database connection
 engine = create_engine('sqlite:///tasks.db')
 Session = sessionmaker(bind=engine)
@@ -76,23 +77,30 @@ def mark_task_complete(task_id):
         return "Task not found."
 
 def load_tasks_from_file(file_name='tasks.json'):
+    tasks = []  # Initialize the list to store tasks
     try:
         with open(file_name, 'r') as file:
-            task_data = json.load(file)  # json module is now available
+            task_data = json.load(file)
+
             for task in task_data:
+                # Convert deadline string to datetime object if applicable
                 deadline_str = task.get('deadline')
                 deadline = datetime.strptime(deadline_str, '%Y-%m-%d') if deadline_str else None
-                category = task.get('category', 'General')
 
+                # Create a new Task object without assigning 'id' (SQLite will auto-increment it)
                 loaded_task = Task(
-                    task['description'],
+                    description=task['description'],
                     priority=task.get('priority', 'Medium'),
-                    category=category,
-                    deadline=deadline
+                    category=task.get('category', 'General'),
+                    deadline=deadline,
+                    completed=task.get('completed', False)
                 )
 
-                loaded_task.id = task.get('id') if task.get('id') else str(uuid.uuid4())
-                loaded_task.completed = task.get('completed', False)
+                # Append the task to the list
                 tasks.append(loaded_task)
+
     except FileNotFoundError:
-        pass
+        print(f"File '{file_name}' not found.")
+        return []
+
+    return tasks  # Return the list of tasks
