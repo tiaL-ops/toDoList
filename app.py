@@ -20,8 +20,6 @@ session = Session()
 
 
 
-#load_tasks_from_file()
-
 # Get all tasks
 @app.route('/api/tasks', methods=['GET'])
 def get_tasks():
@@ -48,27 +46,36 @@ def create_task():
     category = data.get('category', 'General')
     deadline = data.get('deadline', None)
 
+    # Handle the deadline conversion
     if deadline:
-        deadline = datetime.strptime(deadline, '%Y-%m-%d')
+        try:
+            deadline = datetime.strptime(deadline, '%Y-%m-%d').date()  # Convert to Python date object
+        except ValueError:
+            return jsonify({"message": "Invalid date format. Use YYYY-MM-DD.", "status": "error"}), 400
+    else:
+        deadline = None 
 
-    # Create and add task to the database
+    # Create and add the task to the database
     new_task = Task(description=description, priority=priority, category=category, deadline=deadline)
-    session.add(new_task)
-    session.commit()
+    
+    try:
+        session.add(new_task)
+        session.commit()
 
-    # Emit task update to all clients
-    socketio.emit('task_update', {
-        'id': new_task.id,
-        'description': new_task.description,
-        'priority': new_task.priority,
-        'category': new_task.category,
-        'deadline': new_task.deadline.strftime('%Y-%m-%d') if new_task.deadline else None,
-        'completed': new_task.completed
-    })
+        # Emit task update to all clients
+        socketio.emit('task_update', {
+            'id': new_task.id,
+            'description': new_task.description,
+            'priority': new_task.priority,
+            'category': new_task.category,
+            'deadline': new_task.deadline.strftime('%Y-%m-%d') if new_task.deadline else None,
+            'completed': new_task.completed
+        })
 
-    return jsonify({"message": f"Task '{description}' added.", "status": "success"}), 201
-
-
+        return jsonify({"message": f"Task '{description}' added.", "status": "success"}), 201
+    except Exception as e:
+        session.rollback()
+        return jsonify({"message": "Error adding task.", "status": "error", "error": str(e)}), 500
 
 
 @app.route('/api/tasks/<int:task_id>', methods=['DELETE'])

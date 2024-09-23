@@ -12,7 +12,7 @@ class Task(Base):
     id = Column(Integer, primary_key=True)
     description = Column(String, nullable=False)
     priority = Column(String, default='Low')
-    category = Column(String, default='General')  # Add category here
+    category = Column(String, default='General')
     deadline = Column(Date)
     completed = Column(Boolean, default=False)
     completed_on = Column(Date)

@@ -33,7 +33,7 @@ This is a simple ToDo List application that allows users to add, view, and manag
 |         |                                              |                                                | - Created `ToDoForm` for task addition and `ToDoList` to display and manage tasks.                          |
 | **7**   | WebSocket for Real-time Updates             | ✅ Added WebSocket support for real-time updates| - Integrated WebSocket (Socket.io) to enable real-time task creation and deletion.                          |
 |         |                                              |                                                | - Frontend now updates tasks in real time without page refresh.                                             |
-|**8**    | Store and Display Completed Tasks for Reflection|
+|**8**    | Store and Display Completed Tasks for Reflection|--- Have To refactor into Sql
 
 ## Prerequisites
 
