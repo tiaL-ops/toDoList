@@ -119,6 +119,8 @@ def complete_task(task_id):
 
     return jsonify({"message": f"Task '{task_to_complete.description}' marked as complete.", "status": "success"})
 
+
+
 if __name__ == '__main__':
     socketio.run(app, debug=True)  
 
