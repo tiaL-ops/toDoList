@@ -1,80 +1,83 @@
 import React, { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
-import { Container, Typography, Card, CardContent, CardActions, Button, Grid } from '@mui/material';  // Import MUI components
+import { Container, Typography, Card, CardContent, CardActions, Button, Grid, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
 
 const ToDoList = () => {
-  const [tasks, setTasks] = useState([]);
-  const [selectedTask, setSelectedTask] = useState(null);  // Track which task is selected
+  const [tasks, setTasks] = useState([]); // Tasks state
+  const [selectedTask, setSelectedTask] = useState(null); // Selected task state for actions
+  const [sortBy, setSortBy] = useState('priority'); // Sorting state (default is priority)
 
-  // Fetch tasks from the backend
+  // Fetch tasks and setup WebSocket
   useEffect(() => {
     const socket = io('http://127.0.0.1:5000');
 
     fetch('http://127.0.0.1:5000/api/tasks')
       .then(response => response.json())
-      .then(data => setTasks(data.tasks))
+      .then(data => setTasks(data.tasks)) // Set the fetched tasks
       .catch(error => console.error('Error fetching tasks:', error));
 
-    socket.on('connect', () => {
-      console.log('Connected to Socket.io server');  // Log when connected
-    });
-    
-    socket.on('disconnect', () => {
-      console.log('Disconnected from Socket.io server');  // Log when disconnected
-    });
-
+    // Socket events for real-time task updates
     socket.on('task_update', (newTask) => {
-      setTasks(prevTasks => [...prevTasks, newTask]);
+      setTasks(prevTasks => [...prevTasks, newTask]); // Add the new task to the existing list
     });
 
     socket.on('task_deleted', ({ task_id }) => {
-      console.log(`Task deleted with ID: ${task_id}`);  // Log for debugging
-      setTasks(prevTasks => prevTasks.filter(task => task.id !== task_id));  // Filter out the deleted task
+      setTasks(prevTasks => prevTasks.filter(task => task.id !== task_id)); // Remove the deleted task
     });
-    
+
     return () => {
-      socket.disconnect();
+      socket.disconnect(); // Cleanup socket connection on component unmount
     };
   }, []);
 
+  // Handle task completion
   const completeTask = (task_id) => {
-    fetch(`http://127.0.0.1:5000/tasks/${task_id}/complete`, {  
+    fetch(`http://127.0.0.1:5000/tasks/${task_id}/complete`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
+      .then(response => {
+        if (!response.ok) throw new Error('Network response was not ok');
         return response.json();
       })
-      .then((data) => {
-        console.log('Task completed:', data.message);
-        setTasks((prevTasks) => prevTasks.filter((task) => task.id !== task_id));  // Filter out the completed task
+      .then(data => {
+        setTasks(prevTasks => prevTasks.filter(task => task.id !== task_id)); // Filter out completed task
       })
-      .catch((error) => console.error('Error completing task:', error));
+      .catch(error => console.error('Error completing task:', error));
   };
-  
 
-  // Function to delete a task
+  // Handle task deletion
   const deleteTask = (task_id) => {
-    fetch(`http://127.0.0.1:5000/api/tasks/${task_id}`, {
-      method: 'DELETE',
-    })
+    fetch(`http://127.0.0.1:5000/api/tasks/${task_id}`, { method: 'DELETE' })
       .then(response => response.json())
       .then(data => {
-        console.log('Task deleted:', data.message);
-        setTasks(prevTasks => prevTasks.filter(task => task.id !== task_id));
+        setTasks(prevTasks => prevTasks.filter(task => task.id !== task_id)); // Filter out deleted task
       })
       .catch(error => console.error('Error deleting task:', error));
   };
 
-  // Handle task click (to reveal complete and delete options)
+  // Handle task click (toggle selection for actions)
   const handleTaskClick = (task_id) => {
-    setSelectedTask(task_id === selectedTask ? null : task_id);  // Toggle selection
+    setSelectedTask(task_id === selectedTask ? null : task_id); // Toggle selected task
   };
+
+  // Handle sort change
+  const handleSortChange = (event) => {
+    setSortBy(event.target.value); 
+  };
+
+  // Sorting logic (runs every render)
+  const sortedTasks = tasks.slice().sort((a, b) => {
+    if (sortBy === 'priority') {
+      return a.priority - b.priority; // Sort by priority (numerical)
+    } else if (sortBy === 'deadline') {
+      const dateA = a.deadline ? new Date(a.deadline) : new Date(9999, 11, 31); // Handle missing deadlines
+      const dateB = b.deadline ? new Date(b.deadline) : new Date(9999, 11, 31);
+      return dateA - dateB; // Sort by deadline
+    } else {
+      return 0;
+    }
+  });
 
   return (
     <Container>
@@ -82,14 +85,30 @@ const ToDoList = () => {
         My To-Do List
       </Typography>
 
+      {/* Sorting Dropdown */}
+      <FormControl fullWidth style={{ marginBottom: '20px' }}>
+        <InputLabel id="sort-by-label">Sort By</InputLabel>
+        <Select
+          labelId="sort-by-label"
+          id="sort-by"
+          value={sortBy}
+          label="Sort By"
+          onChange={handleSortChange} 
+        >
+          <MenuItem value="priority">Priority</MenuItem>
+          <MenuItem value="deadline">Deadline</MenuItem>
+        </Select>
+      </FormControl>
+
+      {/* Render sorted tasks */}
       <Grid container spacing={3}>
-        {tasks
-          .filter(task => !task.completed)  // Only show tasks that are not completed
+        {sortedTasks
+          .filter(task => !task.completed) // Only show incomplete tasks
           .map((task, index) => (
             <Grid item xs={12} sm={6} md={4} key={index}>
               <Card 
-                onClick={() => handleTaskClick(task.id)}  // Select the task when clicked
-                sx={{ 
+                onClick={() => handleTaskClick(task.id)}
+                sx={{
                   backgroundColor: task.completed ? '#e0f7fa' : '#fff3e0',
                   cursor: 'pointer',
                   ':hover': { boxShadow: '0 5px 15px rgba(0,0,0,0.3)' }
