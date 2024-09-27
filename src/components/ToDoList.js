@@ -7,6 +7,9 @@ const ToDoList = () => {
   const [selectedTask, setSelectedTask] = useState(null); // Selected task state for actions
   const [sortBy, setSortBy] = useState('priority'); // Sorting state (default is priority)
 
+  // Priority levels mapping
+  const priorityLevels = { 'High': 1, 'Medium': 2, 'Low': 3 };
+
   // Fetch tasks and setup WebSocket
   useEffect(() => {
     const socket = io('http://127.0.0.1:5000');
@@ -69,15 +72,29 @@ const ToDoList = () => {
   // Sorting logic (runs every render)
   const sortedTasks = tasks.slice().sort((a, b) => {
     if (sortBy === 'priority') {
-      return a.priority - b.priority; // Sort by priority (numerical)
+      return priorityLevels[a.priority] - priorityLevels[b.priority]; // Sort by priority (High > Medium > Low)
     } else if (sortBy === 'deadline') {
-      const dateA = a.deadline ? new Date(a.deadline) : new Date(9999, 11, 31); // Handle missing deadlines
+      const dateA = a.deadline ? new Date(a.deadline) : new Date(9999, 11, 31); 
       const dateB = b.deadline ? new Date(b.deadline) : new Date(9999, 11, 31);
       return dateA - dateB; // Sort by deadline
     } else {
       return 0;
     }
   });
+
+  // Get the background color based on priority
+  const getCardBackgroundColor = (priority) => {
+    switch (priority) {
+      case 'High':
+        return '#f44336'; // Red for high priority
+      case 'Medium':
+        return '#ff9800'; // Orange for medium priority
+      case 'Low':
+        return '#ffeb3b'; // Yellow for low priority
+      default:
+        return '#ffffff'; // Default white background
+    }
+  };
 
   return (
     <Container>
@@ -109,7 +126,7 @@ const ToDoList = () => {
               <Card 
                 onClick={() => handleTaskClick(task.id)}
                 sx={{
-                  backgroundColor: task.completed ? '#e0f7fa' : '#fff3e0',
+                  backgroundColor: sortBy === 'priority' ? getCardBackgroundColor(task.priority) : '#fff3e0',
                   cursor: 'pointer',
                   ':hover': { boxShadow: '0 5px 15px rgba(0,0,0,0.3)' }
                 }}
