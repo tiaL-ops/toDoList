@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
-import { Container, Typography, Card, CardContent, CardActions, Button, Grid, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
+import { Container, Typography, Card, CardContent, CardActions, Button, Grid, MenuItem, Select, FormControl, InputLabel, TextField } from '@mui/material';
+import { format, isBefore, isToday, differenceInDays } from 'date-fns';  // Date manipulation functions
 
 const ToDoList = () => {
   const [tasks, setTasks] = useState([]); // Tasks state
   const [selectedTask, setSelectedTask] = useState(null); // Selected task state for actions
-  const [sortBy, setSortBy] = useState('priority'); // Sorting state (default is priority)
+  const [sortBy, setSortBy] = useState('deadline'); // Sorting state (default is deadline)
+  const [filterDate, setFilterDate] = useState(null); // Date filter state
 
   // Priority levels mapping
   const priorityLevels = { 'High': 1, 'Medium': 2, 'Low': 3 };
@@ -74,7 +76,7 @@ const ToDoList = () => {
     if (sortBy === 'priority') {
       return priorityLevels[a.priority] - priorityLevels[b.priority]; // Sort by priority (High > Medium > Low)
     } else if (sortBy === 'deadline') {
-      const dateA = a.deadline ? new Date(a.deadline) : new Date(9999, 11, 31); 
+      const dateA = a.deadline ? new Date(a.deadline) : new Date(9999, 11, 31); // Handle missing deadlines
       const dateB = b.deadline ? new Date(b.deadline) : new Date(9999, 11, 31);
       return dateA - dateB; // Sort by deadline
     } else {
@@ -82,17 +84,28 @@ const ToDoList = () => {
     }
   });
 
-  // Get the background color based on priority
-  const getCardBackgroundColor = (priority) => {
-    switch (priority) {
-      case 'High':
-        return '#f44336'; // Red for high priority
-      case 'Medium':
-        return '#ff9800'; // Orange for medium priority
-      case 'Low':
-        return '#ffeb3b'; // Yellow for low priority
-      default:
-        return '#ffffff'; // Default white background
+  // Filter by selected date
+  const filteredTasks = filterDate
+    ? sortedTasks.filter(task => task.deadline && isBefore(new Date(task.deadline), filterDate))
+    : sortedTasks;
+
+  // Visual cues for urgency based on deadline
+  const getDeadlineStatus = (deadline) => {
+    if (!deadline) return '#fff3e0'; // No deadline
+    const deadlineDate = new Date(deadline);
+    if (isToday(deadlineDate)) return '#ffeb3b'; // Yellow if due today
+    if (differenceInDays(deadlineDate, new Date()) < 3) return '#ff9800'; // Orange if due in 3 days
+    if (isBefore(deadlineDate, new Date())) return '#f44336'; // Red if overdue
+    return '#e0f7fa'; // Default
+  };
+
+  // Handle date change and clearing
+  const handleDateChange = (event) => {
+    const dateValue = event.target.value;
+    if (dateValue) {
+      setFilterDate(new Date(dateValue));  // Set filter date if a date is selected
+    } else {
+      setFilterDate(null);  // Reset filter date if cleared
     }
   };
 
@@ -117,16 +130,29 @@ const ToDoList = () => {
         </Select>
       </FormControl>
 
-      {/* Render sorted tasks */}
+      {/* Date filter input */}
+      <TextField
+        label="Filter by deadline"
+        type="date"
+        value={filterDate ? format(filterDate, 'yyyy-MM-dd') : ''}
+        onChange={handleDateChange}  // Call handleDateChange on date change
+        InputLabelProps={{
+          shrink: true,
+        }}
+        fullWidth
+        style={{ marginBottom: '20px' }}
+      />
+
+      {/* Render sorted and filtered tasks */}
       <Grid container spacing={3}>
-        {sortedTasks
+        {filteredTasks
           .filter(task => !task.completed) // Only show incomplete tasks
           .map((task, index) => (
             <Grid item xs={12} sm={6} md={4} key={index}>
               <Card 
                 onClick={() => handleTaskClick(task.id)}
                 sx={{
-                  backgroundColor: sortBy === 'priority' ? getCardBackgroundColor(task.priority) : '#fff3e0',
+                  backgroundColor: sortBy === 'deadline' ? getDeadlineStatus(task.deadline) : '#fff3e0',
                   cursor: 'pointer',
                   ':hover': { boxShadow: '0 5px 15px rgba(0,0,0,0.3)' }
                 }}
@@ -140,7 +166,7 @@ const ToDoList = () => {
                     Category: {task.category}
                   </Typography>
                   <Typography variant="body2" color="textSecondary">
-                    Deadline: {task.deadline ? task.deadline : 'No deadline'}
+                    Deadline: {task.deadline ? format(new Date(task.deadline), 'MM/dd/yyyy') : 'No deadline'}
                   </Typography>
                   <Typography variant="body2" color="textSecondary">
                     Status: {task.completed ? "Completed" : "Pending"}
