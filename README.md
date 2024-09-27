@@ -46,6 +46,10 @@ This is a simple ToDo List application that allows users to add, view, and manag
 - Handled missing or invalid deadline fields to prevent sorting issues.|
 - Fixed issues with third-party libraries (e.g., MUI and Socket.io) to ensure compatibility and smooth operation.|
 - Optimized the package dependencies, resolving version conflicts and updating to stable versions where necessary.|
+|**12**| Task Filtering by Deadline	|✅ Implemented date-based task filtering	|- Added functionality to filter tasks based on selected deadlines.|
+- Integrated a date input for users to filter tasks by deadlines.|
+- Handled clearing of the date filter and ensured smooth UI behavior.|
+
 ## Prerequisites
 
 To run this project locally, you will need:
