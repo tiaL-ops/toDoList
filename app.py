@@ -123,5 +123,3 @@ def complete_task(task_id):
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)  
-
-
