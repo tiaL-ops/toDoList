@@ -6,36 +6,35 @@ import { format, isBefore, isToday, differenceInDays } from 'date-fns';  // Date
 const ToDoList = () => {
   const [tasks, setTasks] = useState([]); // Tasks state
   const [selectedTask, setSelectedTask] = useState(null); // Selected task state for actions
+  const [isEditing, setIsEditing] = useState(null); // State to track which task is being edited
+  const [editedTask, setEditedTask] = useState(null); // Track the changes for the task being edited
   const [sortBy, setSortBy] = useState('deadline'); // Sorting state (default is deadline)
   const [filterDate, setFilterDate] = useState(null); // Date filter state
+  const [showCompleted, setShowCompleted] = useState('incomplete'); // Filter for viewing incomplete, completed, or all tasks
 
-  // Priority levels mapping
   const priorityLevels = { 'High': 1, 'Medium': 2, 'Low': 3 };
 
-  // Fetch tasks and setup WebSocket
   useEffect(() => {
     const socket = io('http://127.0.0.1:5000');
 
     fetch('http://127.0.0.1:5000/api/tasks')
       .then(response => response.json())
-      .then(data => setTasks(data.tasks)) // Set the fetched tasks
+      .then(data => setTasks(data.tasks))
       .catch(error => console.error('Error fetching tasks:', error));
 
-    // Socket events for real-time task updates
     socket.on('task_update', (newTask) => {
-      setTasks(prevTasks => [...prevTasks, newTask]); // Add the new task to the existing list
+      setTasks(prevTasks => [...prevTasks, newTask]);
     });
 
     socket.on('task_deleted', ({ task_id }) => {
-      setTasks(prevTasks => prevTasks.filter(task => task.id !== task_id)); // Remove the deleted task
+      setTasks(prevTasks => prevTasks.filter(task => task.id !== task_id));
     });
 
     return () => {
-      socket.disconnect(); // Cleanup socket connection on component unmount
+      socket.disconnect();
     };
   }, []);
 
-  // Handle task completion
   const completeTask = (task_id) => {
     fetch(`http://127.0.0.1:5000/tasks/${task_id}/complete`, {
       method: 'PUT',
@@ -46,66 +45,121 @@ const ToDoList = () => {
         return response.json();
       })
       .then(data => {
-        setTasks(prevTasks => prevTasks.filter(task => task.id !== task_id)); // Filter out completed task
+        setTasks(prevTasks => 
+          prevTasks.map(task => 
+            task.id === task_id ? { ...task, completed: true } : task
+          )
+        );
       })
       .catch(error => console.error('Error completing task:', error));
   };
 
-  // Handle task deletion
   const deleteTask = (task_id) => {
     fetch(`http://127.0.0.1:5000/api/tasks/${task_id}`, { method: 'DELETE' })
       .then(response => response.json())
       .then(data => {
-        setTasks(prevTasks => prevTasks.filter(task => task.id !== task_id)); // Filter out deleted task
+        setTasks(prevTasks => prevTasks.filter(task => task.id !== task_id));
       })
       .catch(error => console.error('Error deleting task:', error));
   };
 
-  // Handle task click (toggle selection for actions)
   const handleTaskClick = (task_id) => {
-    setSelectedTask(task_id === selectedTask ? null : task_id); // Toggle selected task
+    setSelectedTask(task_id === selectedTask ? null : task_id);
   };
 
-  // Handle sort change
   const handleSortChange = (event) => {
-    setSortBy(event.target.value); 
+    setSortBy(event.target.value);
   };
 
-  // Sorting logic (runs every render)
+  const handleShowCompletedChange = (event) => {
+    setShowCompleted(event.target.value);
+  };
+
+  const handleEditClick = (task) => {
+    setIsEditing(task.id);
+    setEditedTask({ ...task }); // Preload the editing form with the existing task details
+  };
+
+  const handleEditChange = (event) => {
+    const { name, value } = event.target;
+    setEditedTask(prev => ({ ...prev, [name]: value }));
+  };
+
+  const saveEditedTask = (task_id) => {
+    fetch(`http://127.0.0.1:5000/api/tasks/${task_id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(editedTask)
+    })
+      .then(response => response.json())
+      .then(updatedTask => {
+        setTasks(prevTasks => prevTasks.map(task => task.id === task_id ? updatedTask : task));
+        setIsEditing(null);
+      })
+      .catch(error => console.error('Error editing task:', error));
+  };
+
   const sortedTasks = tasks.slice().sort((a, b) => {
     if (sortBy === 'priority') {
-      return priorityLevels[a.priority] - priorityLevels[b.priority]; // Sort by priority (High > Medium > Low)
+      return priorityLevels[a.priority] - priorityLevels[b.priority];
     } else if (sortBy === 'deadline') {
-      const dateA = a.deadline ? new Date(a.deadline) : new Date(9999, 11, 31); // Handle missing deadlines
+      const dateA = a.deadline ? new Date(a.deadline) : new Date(9999, 11, 31);
       const dateB = b.deadline ? new Date(b.deadline) : new Date(9999, 11, 31);
-      return dateA - dateB; // Sort by deadline
+      return dateA - dateB;
     } else {
       return 0;
     }
   });
 
-  // Filter by selected date
-  const filteredTasks = filterDate
-    ? sortedTasks.filter(task => task.deadline && isBefore(new Date(task.deadline), filterDate))
-    : sortedTasks;
+  const filteredTasks = sortedTasks.filter(task => {
+    const matchesDateFilter = filterDate
+      ? task.deadline && isBefore(new Date(task.deadline), filterDate)
+      : true;
 
-  // Visual cues for urgency based on deadline
-  const getDeadlineStatus = (deadline) => {
-    if (!deadline) return '#fff3e0'; // No deadline
-    const deadlineDate = new Date(deadline);
-    if (isToday(deadlineDate)) return '#ffeb3b'; // Yellow if due today
-    if (differenceInDays(deadlineDate, new Date()) < 3) return '#ff9800'; // Orange if due in 3 days
-    if (isBefore(deadlineDate, new Date())) return '#f44336'; // Red if overdue
-    return '#e0f7fa'; // Default
+    const matchesCompletedFilter = 
+      (showCompleted === 'incomplete' && !task.completed) ||
+      (showCompleted === 'completed' && task.completed) ||
+      showCompleted === 'all';
+
+    return matchesDateFilter && matchesCompletedFilter;
+  });
+
+  const getCardBackgroundColor = (task) => {
+    if (task.completed) {
+      return '#4caf50'; // Green for completed tasks
+    } else if (sortBy === 'priority') {
+      switch (task.priority) {
+        case 'High':
+          return '#f44336'; // Red for high priority
+        case 'Medium':
+          return '#ff9800'; // Orange for medium priority
+        case 'Low':
+          return '#ffeb3b'; // Yellow for low priority
+        default:
+          return '#ffffff'; // Default white background
+      }
+    } else if (sortBy === 'deadline') {
+      return getDeadlineStatus(task.deadline);
+    } else {
+      return '#ffffff';
+    }
   };
 
-  // Handle date change and clearing
+  const getDeadlineStatus = (deadline) => {
+    if (!deadline) return '#fff3e0';
+    const deadlineDate = new Date(deadline);
+    if (isToday(deadlineDate)) return '#ffeb3b';
+    if (differenceInDays(deadlineDate, new Date()) < 3) return '#ff9800';
+    if (isBefore(deadlineDate, new Date())) return '#f44336';
+    return '#e0f7fa';
+  };
+
   const handleDateChange = (event) => {
     const dateValue = event.target.value;
     if (dateValue) {
-      setFilterDate(new Date(dateValue));  // Set filter date if a date is selected
+      setFilterDate(new Date(dateValue));
     } else {
-      setFilterDate(null);  // Reset filter date if cleared
+      setFilterDate(null);
     }
   };
 
@@ -130,12 +184,28 @@ const ToDoList = () => {
         </Select>
       </FormControl>
 
+      {/* View Completed/Incomplete Toggle */}
+      <FormControl fullWidth style={{ marginBottom: '20px' }}>
+        <InputLabel id="show-completed-label">Show Tasks</InputLabel>
+        <Select
+          labelId="show-completed-label"
+          id="show-completed"
+          value={showCompleted}
+          label="Show Tasks"
+          onChange={handleShowCompletedChange}
+        >
+          <MenuItem value="incomplete">Incomplete Tasks</MenuItem>
+          <MenuItem value="completed">Completed Tasks</MenuItem>
+          <MenuItem value="all">All Tasks</MenuItem>
+        </Select>
+      </FormControl>
+
       {/* Date filter input */}
       <TextField
         label="Filter by deadline"
         type="date"
         value={filterDate ? format(filterDate, 'yyyy-MM-dd') : ''}
-        onChange={handleDateChange}  // Call handleDateChange on date change
+        onChange={handleDateChange}
         InputLabelProps={{
           shrink: true,
         }}
@@ -145,18 +215,60 @@ const ToDoList = () => {
 
       {/* Render sorted and filtered tasks */}
       <Grid container spacing={3}>
-        {filteredTasks
-          .filter(task => !task.completed) // Only show incomplete tasks
-          .map((task, index) => (
-            <Grid item xs={12} sm={6} md={4} key={index}>
-              <Card 
-                onClick={() => handleTaskClick(task.id)}
-                sx={{
-                  backgroundColor: sortBy === 'deadline' ? getDeadlineStatus(task.deadline) : '#fff3e0',
-                  cursor: 'pointer',
-                  ':hover': { boxShadow: '0 5px 15px rgba(0,0,0,0.3)' }
-                }}
-              >
+        {filteredTasks.map((task, index) => (
+          <Grid item xs={12} sm={6} md={4} key={index}>
+            <Card 
+              onClick={() => handleTaskClick(task.id)}
+              sx={{
+                backgroundColor: getCardBackgroundColor(task),
+                cursor: 'pointer',
+                ':hover': { boxShadow: '0 5px 15px rgba(0,0,0,0.3)' }
+              }}
+            >
+              {isEditing === task.id ? (
+                <CardContent>
+                  <TextField
+                    label="Description"
+                    value={editedTask.description}
+                    name="description"
+                    onChange={handleEditChange}
+                    fullWidth
+                    style={{ marginBottom: '10px' }}
+                  />
+                  <FormControl fullWidth style={{ marginBottom: '10px' }}>
+                    <InputLabel id="edit-priority-label">Priority</InputLabel>
+                    <Select
+                      labelId="edit-priority-label"
+                      value={editedTask.priority}
+                      name="priority"
+                      onChange={handleEditChange}
+                    >
+                      <MenuItem value="High">High</MenuItem>
+                      <MenuItem value="Medium">Medium</MenuItem>
+                      <MenuItem value="Low">Low</MenuItem>
+                    </Select>
+                  </FormControl>
+                  <TextField
+                    label="Deadline"
+                    type="date"
+                    value={editedTask.deadline ? format(new Date(editedTask.deadline), 'yyyy-MM-dd') : ''}
+                    name="deadline"
+                    onChange={handleEditChange}
+                    InputLabelProps={{
+                      shrink: true,
+                    }}
+                    fullWidth
+                    style={{ marginBottom: '10px' }}
+                  />
+                  <TextField
+                    label="Category"
+                    value={editedTask.category}
+                    name="category"
+                    onChange={handleEditChange}
+                    fullWidth
+                  />
+                </CardContent>
+              ) : (
                 <CardContent>
                   <Typography variant="h6">{task.description}</Typography>
                   <Typography variant="body2" color="textSecondary">
@@ -172,19 +284,31 @@ const ToDoList = () => {
                     Status: {task.completed ? "Completed" : "Pending"}
                   </Typography>
                 </CardContent>
-                {selectedTask === task.id && (
-                  <CardActions>
+              )}
+              {selectedTask === task.id && (
+                <CardActions>
+                  {!task.completed && !isEditing && (
                     <Button color="primary" onClick={() => completeTask(task.id)}>
                       Complete
                     </Button>
-                    <Button color="secondary" onClick={() => deleteTask(task.id)}>
-                      Delete
+                  )}
+                  {isEditing === task.id ? (
+                    <Button color="primary" onClick={() => saveEditedTask(task.id)}>
+                      Save
                     </Button>
-                  </CardActions>
-                )}
-              </Card>
-            </Grid>
-          ))}
+                  ) : (
+                    <Button color="primary" onClick={() => handleEditClick(task)}>
+                      Edit
+                    </Button>
+                  )}
+                  <Button color="secondary" onClick={() => deleteTask(task.id)}>
+                    Delete
+                  </Button>
+                </CardActions>
+              )}
+            </Card>
+          </Grid>
+        ))}
       </Grid>
     </Container>
   );

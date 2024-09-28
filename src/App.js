@@ -44,6 +44,42 @@ function App() {
     );
   };
 
+  const editTask = async (taskId) => {
+    // Prepare the updated task data
+    const updatedTask = {
+      description: editedTask.description,
+      priority: editedTask.priority,
+      category: editedTask.category,
+      deadline: editedTask.deadline,
+    };
+  
+    // Send the PUT request with the updated task data
+  const response = await fetch(`/api/tasks/${taskId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(updatedTask),
+  });
+
+  if (response.ok) {
+    const updatedTaskFromServer = await response.json();
+
+    // Update the task in the local state correctly
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === taskId ? updatedTaskFromServer.task : task
+      )
+    );
+
+    // Exit editing mode
+    setIsEditing(null);
+  } else {
+    console.error("Failed to update task");
+  }
+};
+
+
   return (
     <div className="App">
       <h1>ToDo List</h1>

@@ -119,6 +119,57 @@ def complete_task(task_id):
 
     return jsonify({"message": f"Task '{task_to_complete.description}' marked as complete.", "status": "success"})
 
+@app.route('/api/tasks/<int:task_id>', methods=['PUT'])
+def edit_task(task_id):
+    # Find the task by ID
+    task_to_edit = session.query(Task).filter_by(id=task_id).first()
+
+    if not task_to_edit:
+        return jsonify({"message": "Task not found.", "status": "error"}), 404
+
+    # Get the updated data from the request
+    data = request.get_json()
+
+    # Update the task fields
+    task_to_edit.description = data.get('description', task_to_edit.description)
+    task_to_edit.priority = data.get('priority', task_to_edit.priority)
+    task_to_edit.category = data.get('category', task_to_edit.category)
+    
+    deadline = data.get('deadline', None)
+    if deadline:
+        try:
+            task_to_edit.deadline = datetime.strptime(deadline, '%Y-%m-%d').date()  # Convert to Python date object
+        except ValueError:
+            return jsonify({"message": "Invalid date format. Use YYYY-MM-DD.", "status": "error"}), 400
+    else:
+        task_to_edit.deadline = None
+
+    try:
+        # Commit the changes to the database
+        session.commit()
+
+        # Emit the updated task to all clients
+        socketio.emit('task_update', {
+            'id': task_to_edit.id,
+            'description': task_to_edit.description,
+            'priority': task_to_edit.priority,
+            'category': task_to_edit.category,
+            'deadline': task_to_edit.deadline.strftime('%Y-%m-%d') if task_to_edit.deadline else None,
+            'completed': task_to_edit.completed
+        })
+
+        return jsonify({"message": f"Task '{task_to_edit.description}' updated.", "status": "success", "task": {
+            'id': task_to_edit.id,
+            'description': task_to_edit.description,
+            'priority': task_to_edit.priority,
+            'category': task_to_edit.category,
+            'deadline': task_to_edit.deadline.strftime('%Y-%m-%d') if task_to_edit.deadline else None,
+            'completed': task_to_edit.completed
+        }}), 200
+    except Exception as e:
+        session.rollback()
+        return jsonify({"message": "Error updating task.", "status": "error", "error": str(e)}), 500
+
 
 
 if __name__ == '__main__':
