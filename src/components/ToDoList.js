@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import { Container, Typography, Card, CardContent, CardActions, Button, Grid, MenuItem, Select, FormControl, InputLabel, TextField } from '@mui/material';
-import { format, isBefore, isToday, differenceInDays } from 'date-fns';  // Date manipulation functions
+import { format, isBefore, isToday, differenceInDays } from 'date-fns';
 
 const ToDoList = () => {
   const [tasks, setTasks] = useState([]); // Tasks state
@@ -22,10 +22,19 @@ const ToDoList = () => {
       .then(data => setTasks(data.tasks))
       .catch(error => console.error('Error fetching tasks:', error));
 
-    socket.on('task_update', (newTask) => {
-      setTasks(prevTasks => [...prevTasks, newTask]);
+    // Handle task updates via socket
+    socket.on('task_update', (updatedTask) => {
+      setTasks(prevTasks => {
+        
+        const taskExists = prevTasks.find(task => task.id === updatedTask.id);
+        if (taskExists) {
+          return prevTasks.map(task => task.id === updatedTask.id ? updatedTask : task);
+        }
+        return [...prevTasks, updatedTask];
+      });
     });
 
+    // Handle task deletion via socket
     socket.on('task_deleted', ({ task_id }) => {
       setTasks(prevTasks => prevTasks.filter(task => task.id !== task_id));
     });
@@ -93,7 +102,7 @@ const ToDoList = () => {
     })
       .then(response => response.json())
       .then(updatedTask => {
-        setTasks(prevTasks => prevTasks.map(task => task.id === task_id ? updatedTask : task));
+        setTasks(prevTasks => prevTasks.map(task => task.id === task_id ? updatedTask.task : task)); // Ensure correct update of task
         setIsEditing(null);
       })
       .catch(error => console.error('Error editing task:', error));
@@ -216,7 +225,7 @@ const ToDoList = () => {
       {/* Render sorted and filtered tasks */}
       <Grid container spacing={3}>
         {filteredTasks.map((task, index) => (
-          <Grid item xs={12} sm={6} md={4} key={index}>
+          <Grid item xs={12} sm={6} md={4} key={task.id}> {/* Ensure unique key */}
             <Card 
               onClick={() => handleTaskClick(task.id)}
               sx={{
@@ -287,7 +296,7 @@ const ToDoList = () => {
               )}
               {selectedTask === task.id && (
                 <CardActions>
-                  {!task.completed && !isEditing && (
+                  {!task.completed && isEditing !== task.id && (
                     <Button color="primary" onClick={() => completeTask(task.id)}>
                       Complete
                     </Button>
