@@ -5,10 +5,25 @@ from flask_socketio import SocketIO, emit
 from sqlalchemy.orm import sessionmaker
 from db.models import Task
 from sqlalchemy import create_engine
+from dotenv import load_dotenv
+import os
+from flask_jwt_extended import JWTManager
+from flask_jwt_extended import jwt_required
+from flask import jsonify
+from flask_jwt_extended import create_access_token
+from db.models import User
+from datetime import timedelta
+from flask_jwt_extended import create_refresh_token, get_jwt_identity
 
+load_dotenv()
 # Set up Flask app and CORS
+
 app = Flask(__name__)
 CORS(app)
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=30)
+
+jwt = JWTManager(app)
 
 # Initialize SocketIO with CORS enabled
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -22,6 +37,7 @@ session = Session()
 
 # Get all tasks
 @app.route('/api/tasks', methods=['GET'])
+@jwt_required()
 def get_tasks():
     all_tasks = session.query(Task).all()
     task_data = [
@@ -39,6 +55,7 @@ def get_tasks():
 
 
 @app.route('/api/tasks', methods=['POST'])
+@jwt_required()
 def create_task():
     data = request.get_json()
     description = data.get('description')
@@ -79,6 +96,7 @@ def create_task():
 
 
 @app.route('/api/tasks/<int:task_id>', methods=['DELETE'])
+@jwt_required()
 def delete_task_api(task_id):
     # Find the task by ID
     task_to_delete = session.query(Task).filter_by(id=task_id).first()
@@ -120,6 +138,7 @@ def complete_task(task_id):
     return jsonify({"message": f"Task '{task_to_complete.description}' marked as complete.", "status": "success"})
 
 @app.route('/api/tasks/<int:task_id>', methods=['PUT'])
+@jwt_required()
 def edit_task(task_id):
     # Find the task by ID
     task_to_edit = session.query(Task).filter_by(id=task_id).first()
@@ -171,6 +190,69 @@ def edit_task(task_id):
         return jsonify({"message": "Error updating task.", "status": "error", "error": str(e)}), 500
 
 
+# User authentication and JWT routes
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+
+    user = session.query(User).filter_by(username=username).first()
+
+    if user and user.check_password(password):
+        access_token = create_access_token(identity=user.id)
+        refresh_token = create_refresh_token(identity=user.id)
+        return jsonify(access_token=access_token, refresh_token=refresh_token), 200
+    else:
+        return jsonify({"message": "Invalid credentials"}), 401
+
+@app.route('/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+
+    if session.query(User).filter_by(username=username).first():
+        return jsonify({"message": "User already exists"}), 400
+
+    new_user = User(username=username)
+    new_user.set_password(password)
+
+    session.add(new_user)
+    session.commit()
+
+    return jsonify({"message": "User registered successfully!"}), 201
+
+
+
+
+@app.route('/refresh', methods=['POST'])
+@jwt_required(refresh=True)
+def refresh():
+    current_user = get_jwt_identity()
+    new_access_token = create_access_token(identity=current_user)
+    return jsonify(access_token=new_access_token), 200
+
+# Task routes with JWT protection
+@app.route('/api/tasks', methods=['GET'])
+@jwt_required()
+def get_tasks():
+    all_tasks = session.query(Task).all()
+    task_data = [
+        {
+            'id': task.id,
+            'description': task.description, 
+            'completed': task.completed, 
+            'priority': task.priority,
+            'category': task.category,
+            'deadline': task.deadline.strftime('%Y-%m-%d') if task.deadline else None
+        } for task in all_tasks
+    ]
+    return jsonify({'tasks': task_data})
+
+@app.teardown_appcontext
+def shutdown_session(exception=None):
+    session.remove()
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)  
