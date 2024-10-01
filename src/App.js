@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import ToDoForm from "./components/ToDoForm";
 import ToDoList from "./components/ToDoList";
 import LoginForm from "./components/LoginForm";
+import RegisterForm from "./components/RegistrationForm"; 
 
 function App() {
   const [tasks, setTasks] = useState([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [token, setToken] = useState(localStorage.getItem('token') || null);
+  const [showLogin, setShowLogin] = useState(true);  // State to toggle between login and register forms
 
   useEffect(() => {
     // Fetch tasks from the Flask API only if authenticated
@@ -31,8 +33,8 @@ function App() {
     }
   }, [token]);
 
+  // Handle login
   const handleLogin = async (credentials) => {
-    // Perform login
     const response = await fetch("/login", {
       method: "POST",
       headers: {
@@ -54,6 +56,36 @@ function App() {
     }
   };
 
+  const handleRegister = async (credentials) => {
+    try {
+      const response = await fetch(`/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(credentials),
+      });
+  
+      console.log(response);  // Log the entire response object
+  
+      if (response.ok) {
+        const data = await response.json();
+        const jwtToken = data.access_token;
+        localStorage.setItem("token", jwtToken);
+        setToken(jwtToken);
+        setIsAuthenticated(true);
+      } else {
+        const errorData = await response.json();  // Parse the error message from the server
+        console.error("Registration failed:", errorData);
+        alert(`Error: ${errorData.message || 'Something went wrong'}`);
+      }
+    } catch (error) {
+      console.error("Error occurred during registration:", error);
+      alert(`Error: ${error.message || 'Failed to fetch'}`);
+    }
+  };
+  
+  
   const handleLogout = () => {
     // Clear token from localStorage and reset state
     localStorage.removeItem('token');
@@ -147,7 +179,29 @@ function App() {
     <div className="App">
       <h1>ToDo List</h1>
       {!isAuthenticated ? (
-        <LoginForm onLogin={handleLogin} />
+        <>
+          {showLogin ? (
+            <>
+              <LoginForm onLogin={handleLogin} />
+              <p>
+                Don't have an account?{" "}
+                <button onClick={() => setShowLogin(false)}>
+                  Register
+                </button>
+              </p>
+            </>
+          ) : (
+            <>
+              <RegisterForm onRegister={handleRegister} />
+              <p>
+                Already have an account?{" "}
+                <button onClick={() => setShowLogin(true)}>
+                  Login
+                </button>
+              </p>
+            </>
+          )}
+        </>
       ) : (
         <>
           <button onClick={handleLogout}>Logout</button>
