@@ -17,13 +17,17 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from flask_wtf.csrf import CSRFProtect
 
-csrf = CSRFProtect(app)
-# Load environment variables early
+
 load_dotenv()
 
-# Set up Flask app and CORS
+# Set up Flask app
 app = Flask(__name__)
-CORS(app)
+
+# Configure CORS to allow requests from the frontend
+CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
+
+# Initialize CSRF protection
+csrf = CSRFProtect(app)
 
 # JWT configuration
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
@@ -36,6 +40,7 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 # Set up SQLite database connection and SQLAlchemy session
 engine = create_engine('sqlite:///tasks.db')
 Session = scoped_session(sessionmaker(bind=engine))
+
 
 @app.teardown_appcontext
 def shutdown_session(exception=None):
@@ -244,9 +249,8 @@ def refresh():
 
 
 @app.route('/test', methods=['GET'])
-
 def test():
-    return jsonify({"message": "ReTest successful!"}), 200
+    return jsonify({"message": "Test successful!"}), 200
 
 
 if __name__ == '__main__':

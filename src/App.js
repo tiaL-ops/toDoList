@@ -2,170 +2,207 @@ import { useState, useEffect } from "react";
 import ToDoForm from "./components/ToDoForm";
 import ToDoList from "./components/ToDoList";
 import LoginForm from "./components/LoginForm";
-import RegisterForm from "./components/RegistrationForm"; 
+import RegisterForm from "./components/RegistrationForm";
 
 function App() {
   const [tasks, setTasks] = useState([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [token, setToken] = useState(localStorage.getItem('token') || null);
-  const [showLogin, setShowLogin] = useState(true);  // State to toggle between login and register forms
+  const [showLogin, setShowLogin] = useState(true);
 
+  // Fetch tasks only when authenticated
   useEffect(() => {
-    // Fetch tasks from the Flask API only if authenticated
-    if (token) {
-      fetch("/api/tasks", {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          setTasks(data.tasks);
-        })
-        .catch((error) => {
-          console.error("Error fetching tasks:", error);
-          // Handle token expiration or invalid token
-          if (error.status === 401) {
+    const fetchTasks = async () => {
+      if (!token) return;
+      
+      try {
+        const response = await fetch("/api/tasks", {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
             setIsAuthenticated(false);
             localStorage.removeItem('token');
+            return;
           }
-        });
-    }
+          throw new Error(`Failed to fetch tasks: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        setTasks(data.tasks);
+      } catch (error) {
+        console.error("Error fetching tasks:", error);
+      }
+    };
+
+    fetchTasks();
   }, [token]);
 
   // Handle login
   const handleLogin = async (credentials) => {
-    const response = await fetch("/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(credentials),
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      const jwtToken = data.access_token;
-
-      // Store the token and update the state
-      localStorage.setItem('token', jwtToken);
-      setToken(jwtToken);
-      setIsAuthenticated(true);
-    } else {
-      console.error("Login failed");
-    }
-  };
-
-  const handleRegister = async (credentials) => {
     try {
-      const response = await fetch('http://localhost:5000/register', {
-        method: 'POST',
+      const response = await fetch("/login", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(credentials),
       });
-  
+
+      if (!response.ok) throw new Error("Login failed");
+
       const data = await response.json();
-      if (response.ok) {
-        console.log('Registration successful:', data);
-      } else {
-        console.error('Registration failed:', data);
-      }
+      const jwtToken = data.access_token;
+
+      localStorage.setItem('token', jwtToken);
+      setToken(jwtToken);
+      setIsAuthenticated(true);
     } catch (error) {
-      console.error('Fetch error:', error);
+      console.error("Login error:", error);
     }
   };
-  handleRegister({ username: 'testuser', password: 'testpassword' });
-  
+
+  // Handle registration
+  const handleRegister = async (credentials) => {
+    try {
+      const response = await fetch("http://localhost:5000/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(credentials),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(`Registration failed: ${data.message}`);
+      }
+
+      console.log('Registration successful:', data);
+    } catch (error) {
+      console.error('Registration error:', error);
+    }
+  };
+
+  // Handle logout
   const handleLogout = () => {
-    // Clear token from localStorage and reset state
     localStorage.removeItem('token');
     setToken(null);
     setIsAuthenticated(false);
     setTasks([]);
   };
 
+  // Add a new task
   const addTask = async (task) => {
-    const response = await fetch("/api/tasks", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-      body: JSON.stringify(task),
-    });
+    try {
+      const response = await fetch("/api/tasks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(task),
+      });
 
-    if (response.ok) {
+      if (!response.ok) throw new Error("Failed to add task");
+
       const newTask = await response.json();
       setTasks((prevTasks) => [...prevTasks, newTask]);
-    } else {
-      console.error("Failed to add task");
+    } catch (error) {
+      console.error("Add task error:", error);
     }
   };
 
+  // Delete a task
   const deleteTask = async (taskId) => {
-    const response = await fetch(`/api/tasks/${taskId}`, {
-      method: "DELETE",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-      },
-    });
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
 
-    if (response.ok) {
+      if (!response.ok) throw new Error("Failed to delete task");
+
       setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
-    } else {
-      console.error("Failed to delete task");
+    } catch (error) {
+      console.error("Delete task error:", error);
     }
   };
 
+  // Complete a task
   const completeTask = async (taskId) => {
-    const response = await fetch(`/tasks/${taskId}/complete`, {
-      method: "PUT",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-      },
-    });
+    try {
+      const response = await fetch(`/tasks/${taskId}/complete`, {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
 
-    if (response.ok) {
+      if (!response.ok) throw new Error("Failed to complete task");
+
       setTasks((prevTasks) =>
         prevTasks.map((task) =>
           task.id === taskId ? { ...task, completed: true } : task
         )
       );
-    } else {
-      console.error("Failed to complete task");
+    } catch (error) {
+      console.error("Complete task error:", error);
     }
   };
 
+  // Edit a task
   const editTask = async (taskId, editedTask) => {
-    const updatedTask = {
-      description: editedTask.description,
-      priority: editedTask.priority,
-      category: editedTask.category,
-      deadline: editedTask.deadline,
-    };
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(editedTask),
+      });
 
-    const response = await fetch(`/api/tasks/${taskId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
-      },
-      body: JSON.stringify(updatedTask),
-    });
+      if (!response.ok) throw new Error("Failed to update task");
 
-    if (response.ok) {
       const updatedTaskFromServer = await response.json();
       setTasks((prevTasks) =>
         prevTasks.map((task) =>
           task.id === taskId ? updatedTaskFromServer.task : task
         )
       );
-    } else {
-      console.error("Failed to update task");
+    } catch (error) {
+      console.error("Edit task error:", error);
     }
   };
+
+  // Fetch test data
+  useEffect(() => {
+    const fetchTestData = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/test", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) throw new Error(`Failed to fetch test data: ${response.statusText}`);
+
+        const result = await response.json();
+        console.log("Test fetch result:", result);
+      } catch (error) {
+        console.error("Test fetch error:", error);
+      }
+    };
+
+    fetchTestData();
+  }, []);
 
   return (
     <div className="App">
@@ -177,9 +214,7 @@ function App() {
               <LoginForm onLogin={handleLogin} />
               <p>
                 Don't have an account?{" "}
-                <button onClick={() => setShowLogin(false)}>
-                  Register
-                </button>
+                <button onClick={() => setShowLogin(false)}>Register</button>
               </p>
             </>
           ) : (
@@ -187,9 +222,7 @@ function App() {
               <RegisterForm onRegister={handleRegister} />
               <p>
                 Already have an account?{" "}
-                <button onClick={() => setShowLogin(true)}>
-                  Login
-                </button>
+                <button onClick={() => setShowLogin(true)}>Login</button>
               </p>
             </>
           )}
@@ -209,20 +242,5 @@ function App() {
     </div>
   );
 }
-const testFetch = async () => {
-  try {
-    const response = await fetch(`http://localhost:5000/test`, {
-      method: "GET",
-    });
-    const data = await response.json();
-    console.log("Test Fetch Response:", data);
-  } catch (error) {
-    console.error("Test fetch failed:", error);
-  }
-};
-
-useEffect(() => {
-  testFetch();  // Call this to see if the server is responding
-}, []);
 
 export default App;
