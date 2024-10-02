@@ -58,33 +58,25 @@ function App() {
 
   const handleRegister = async (credentials) => {
     try {
-      const response = await fetch(`/register`, {
-        method: "POST",
+      const response = await fetch('http://localhost:5000/register', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(credentials),
       });
   
-      console.log(response);  // Log the entire response object
-  
+      const data = await response.json();
       if (response.ok) {
-        const data = await response.json();
-        const jwtToken = data.access_token;
-        localStorage.setItem("token", jwtToken);
-        setToken(jwtToken);
-        setIsAuthenticated(true);
+        console.log('Registration successful:', data);
       } else {
-        const errorData = await response.json();  // Parse the error message from the server
-        console.error("Registration failed:", errorData);
-        alert(`Error: ${errorData.message || 'Something went wrong'}`);
+        console.error('Registration failed:', data);
       }
     } catch (error) {
-      console.error("Error occurred during registration:", error);
-      alert(`Error: ${error.message || 'Failed to fetch'}`);
+      console.error('Fetch error:', error);
     }
   };
-  
+  handleRegister({ username: 'testuser', password: 'testpassword' });
   
   const handleLogout = () => {
     // Clear token from localStorage and reset state
@@ -217,5 +209,20 @@ function App() {
     </div>
   );
 }
+const testFetch = async () => {
+  try {
+    const response = await fetch(`http://localhost:5000/test`, {
+      method: "GET",
+    });
+    const data = await response.json();
+    console.log("Test Fetch Response:", data);
+  } catch (error) {
+    console.error("Test fetch failed:", error);
+  }
+};
+
+useEffect(() => {
+  testFetch();  // Call this to see if the server is responding
+}, []);
 
 export default App;
