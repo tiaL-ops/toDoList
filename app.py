@@ -246,7 +246,7 @@ def refresh():
 @app.route('/test', methods=['GET'])
 
 def test():
-    return jsonify({"message": "Test successful!"}), 200
+    return jsonify({"message": "ReTest successful!"}), 200
 
 
 if __name__ == '__main__':
