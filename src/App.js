@@ -68,7 +68,7 @@ function App() {
   // Handle registration
   const handleRegister = async (credentials) => {
     try {
-      const response = await fetch("http://localhost:5000/register", {
+      const response = await fetch("http://127.0.0.1:5000/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -185,7 +185,7 @@ function App() {
   useEffect(() => {
     const fetchTestData = async () => {
       try {
-        const response = await fetch("http://localhost:5000/test", {
+        const response = await fetch("http://127.0.0.1:5000/test", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from datetime import datetime, timedelta
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
@@ -18,13 +18,14 @@ from sqlalchemy.exc import SQLAlchemyError
 from flask_wtf.csrf import CSRFProtect
 
 
+
 load_dotenv()
 
 # Set up Flask app
 app = Flask(__name__)
 
 # Configure CORS to allow requests from the frontend
-CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
+CORS(app)
 
 # Initialize CSRF protection
 csrf = CSRFProtect(app)
@@ -248,9 +249,14 @@ def refresh():
     return jsonify(access_token=new_access_token), 200
 
 
-@app.route('/test', methods=['GET'])
+@app.route('/test', methods=['GET', 'POST'])
 def test():
-    return jsonify({"message": "Test successful!"}), 200
+    response = make_response(jsonify({"message": "Hello, CORS manually enabled!"}))
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+    response.headers.add("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+    return response
+
 
 
 if __name__ == '__main__':
