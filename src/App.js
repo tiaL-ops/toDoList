@@ -9,6 +9,7 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [token, setToken] = useState(localStorage.getItem('token') || null);
   const [showLogin, setShowLogin] = useState(true);
+  
 
   // Fetch tasks only when authenticated
   useEffect(() => {
@@ -41,6 +42,9 @@ function App() {
     fetchTasks();
   }, [token]);
 
+  
+
+  
   // Handle login
   const handleLogin = async (credentials) => {
     try {

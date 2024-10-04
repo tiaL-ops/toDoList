@@ -9,16 +9,12 @@ import os
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, create_refresh_token, get_jwt_identity
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-
-from db.models import Task
-from db.user_models import User
-from collections import deque
 from sqlalchemy.exc import SQLAlchemyError
-
+from werkzeug.security import generate_password_hash
 from flask_wtf.csrf import CSRFProtect
+from collections import deque
 
-
-
+# Load environment variables
 load_dotenv()
 
 # Set up Flask app
@@ -30,10 +26,27 @@ CORS(app)
 # Initialize CSRF protection
 csrf = CSRFProtect(app)
 
+# Configure database URI
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tasks.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize SQLAlchemy, SocketIO, and Migrate
+db = SQLAlchemy(app)  # Using SQLAlchemy as Flask's ORM
+migrate = Migrate(app, db)
+socketio = SocketIO(app, cors_allowed_origins="*")
+
 # JWT configuration
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=30)
 jwt = JWTManager(app)
+
+# Set up direct SQLAlchemy engine and scoped session if needed
+engine = create_engine('sqlite:///tasks.db')
+Session = scoped_session(sessionmaker(bind=engine))
+
+# Import your models (User and Task) after initializing db and app
+from db.user_models import User
+from db.models import Task
 
 # Initialize SocketIO with CORS enabled
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -226,19 +239,52 @@ def login():
         return jsonify({"message": "Invalid credentials"}), 401
 
 
-
 @app.route('/register', methods=['POST'])
-@csrf.exempt 
+@csrf.exempt
 def register():
     data = request.get_json()
+
+    # Validate the input
     if not data or 'username' not in data or 'password' not in data:
         return jsonify({"message": "Missing username or password"}), 400
-    # Simulate successful registration
-    return jsonify({"message": "User registered successfully"}), 201
+
+    # Hash the password for security
+    hashed_password = generate_password_hash(data['password'])
+
+    # Create a new user object
+    new_user = User(username=data['username'], password_hash=hashed_password)
+
+    try:
+        # Add the new user to the database
+        db.session.add(new_user)
+        db.session.commit()
+
+        return jsonify({"message": "User registered successfully"}), 201
+    except Exception as e:
+        db.session.rollback()  # Rollback in case of any error
+        return jsonify({"message": "Error registering user", "error": str(e)}), 500
 
 
-
-
+@app.route('/api/users', methods=['GET'])
+# @jwt_required()  
+def get_users():
+    session = Session()
+    try:
+        # Query all users from the database
+        users = session.query(User).all()
+        users_data = [
+            {
+                'id': user.id,
+                'username': user.username,
+            } for user in users
+        ]
+        session.close()
+        return jsonify({"users": users_data}), 200
+    except SQLAlchemyError as e:
+        session.rollback()
+        return jsonify({"message": "Error fetching users.", "status": "error", "error": str(e)}), 500
+    finally:
+        session.close()
 
 
 @app.route('/refresh', methods=['POST'])
@@ -256,9 +302,10 @@ def test():
     response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
     response.headers.add("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
     return response
-
-
+   
 
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()  # Create tables if they don't exist
     socketio.run(app, debug=True, use_reloader=False)
 
