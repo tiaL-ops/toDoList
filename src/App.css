@@ -1,90 +1,159 @@
-/* Overall app container */
-.App {
-  text-align: center;
-  font-family: 'Arial', sans-serif;
-  background-color: #f4f7fa;
-  min-height: 100vh;
+/* General body styling */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Roboto', sans-serif;
+  background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 20px;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-container {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 15px;
+  padding: 40px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+/* Title */
+h1 {
+  color: #333;
+  font-size: 2.5rem;
+  margin-bottom: 20px;
+  font-weight: 600;
 }
 
 /* Form styling */
 form {
-  background-color: white;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  max-width: 400px;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
+  margin-top: 20px;
 }
 
-/* Input fields */
-input[type="text"], input[type="date"], select {
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  font-size: 16px;
+input[type="text"], input[type="password"] {
   width: 100%;
-  box-sizing: border-box;
-  transition: border-color 0.3s ease;
+  padding: 15px;
+  margin: 10px 0;
+  border-radius: 30px;
+  border: 1px solid #ddd;
+  font-size: 1rem;
+  box-shadow: inset 0px 2px 5px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
 }
 
-input[type="text"]:focus, input[type="date"]:focus, select:focus {
+input[type="text"]:focus, input[type="password"]:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: #74ebd5;
+  box-shadow: inset 0px 4px 10px rgba(0, 0, 0, 0.1);
 }
 
-/* Button styling */
+/* Buttons */
 button {
-  padding: 10px;
+  padding: 15px 30px;
+  background-color: #74ebd5;
+  color: #fff;
   border: none;
-  border-radius: 5px;
-  background-color: #007bff;
-  color: white;
-  font-size: 16px;
+  border-radius: 30px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  margin-top: 10px;
+  box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1);
 }
 
 button:hover {
-  background-color: #0056b3;
+  background-color: #5ec9b5;
+  box-shadow: 0px 7px 20px rgba(0, 0, 0, 0.2);
 }
 
-/* Dropdown styling */
-select {
-  appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  background-color: white;
+button:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+.toggle-button {
+  background-color: transparent;
+  border: none;
+  color: #74ebd5;
+  font-size: 1rem;
   cursor: pointer;
+  margin-top: 15px;
 }
 
-/* General input margin */
-input, select {
+.toggle-button:hover {
+  color: #5ec9b5;
+}
+
+/* Auth container */
+.auth-container {
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* Task List */
+.todo-list {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0;
+}
+
+.todo-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #fff;
+  border-radius: 10px;
+  padding: 15px;
   margin-bottom: 10px;
+  box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease;
 }
 
-div {
-  text-align: left;
+.todo-item:hover {
+  transform: translateY(-3px);
 }
 
-/* Media query for smaller screens */
-@media (max-width: 600px) {
-  form {
-    padding: 15px;
-    max-width: 90%; 
-  }
-
-  button {
-    font-size: 14px;
-  }
-
-  input[type="text"], input[type="date"], select {
-    font-size: 14px; 
-  }
+.todo-item.completed {
+  text-decoration: line-through;
+  color: #999;
 }
+
+.todo-item button {
+  background-color: #ff4d4d;
+  color: white;
+  border: none;
+  border-radius: 50px;
+  padding: 8px 15px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.todo-item button:hover {
+  background-color: #e33e3e;
+}
+
+/* Logout Button */
+.logout-button {
+  background-color: #ff4d4d;
+  padding: 12px 20px;
+  font-size: 1rem;
+  border-radius: 30px;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 20px;
+}
+
+.logout-button:hover {
+  background-color: #e33e3e;
+  box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
+}
+

@@ -3,6 +3,7 @@ import ToDoForm from "./components/ToDoForm";
 import ToDoList from "./components/ToDoList";
 import LoginForm from "./components/LoginForm";
 import RegisterForm from "./components/RegistrationForm";
+import './App.css'; 
 
 function App() {
   const [tasks, setTasks] = useState([]);
