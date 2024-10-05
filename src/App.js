@@ -46,27 +46,30 @@ function App() {
   
 
   
-  // Handle login
   const handleLogin = async (credentials) => {
     try {
-      const response = await fetch("/login", {
+      const response = await fetch("http://127.0.0.1:5000/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(credentials),
       });
-
-      if (!response.ok) throw new Error("Login failed");
-
-      const data = await response.json();
+  
+      const data = await response.json();  // Always parse the JSON response
+  
+      if (!response.ok) {
+        throw new Error(`Login failed: ${data.message || 'Unknown error'}`);
+      }
+  
       const jwtToken = data.access_token;
-
-      localStorage.setItem('token', jwtToken);
-      setToken(jwtToken);
-      setIsAuthenticated(true);
+  
+      localStorage.setItem("token", jwtToken);  
+      setToken(jwtToken);                      
+      setIsAuthenticated(true);               
     } catch (error) {
-      console.error("Login error:", error);
+      console.error("Login error:", error);     // Log the detailed error
+      
     }
   };
 
