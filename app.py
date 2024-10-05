@@ -13,12 +13,14 @@ from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.security import generate_password_hash
 from flask_wtf.csrf import CSRFProtect
 from collections import deque
+from flask import send_from_directory 
 
 # Load environment variables
 load_dotenv()
 
 # Set up Flask app
-app = Flask(__name__)
+app = Flask(__name__, static_folder='build')
+
 
 # Configure CORS to allow requests from the frontend
 CORS(app)
@@ -302,7 +304,15 @@ def test():
     response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
     response.headers.add("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
     return response
-   
+
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_react(path):
+    if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
+        return send_from_directory(app.static_folder, path)
+    else:
+        return send_from_directory(app.static_folder, 'index.html')
 
 if __name__ == '__main__':
     with app.app_context():
