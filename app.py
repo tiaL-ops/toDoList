@@ -221,7 +221,6 @@ def edit_task(task_id):
     finally:
         session.close()
 
-# User authentication and JWT routes
 @app.route('/login', methods=['POST'])
 def login():
     session = Session()
@@ -229,16 +228,33 @@ def login():
     username = data.get('username')
     password = data.get('password')
 
-    user = session.query(User).filter_by(username=username).first()
+    try:
+        # Check if the user exists
+        user = session.query(User).filter_by(username=username).first()
 
-    if user and user.check_password(password):
+        if not user:
+            # Return a specific message if the user does not exist
+            session.close()
+            return jsonify({"message": "User does not exist", "status": "error"}), 404
+
+        # Check if the password matches
+        if not user.check_password(password):
+            session.close()
+            return jsonify({"message": "Incorrect password", "status": "error"}), 401
+
+        # Generate access and refresh tokens
         access_token = create_access_token(identity=user.id)
         refresh_token = create_refresh_token(identity=user.id)
         session.close()
+
+        # Return tokens on successful login
         return jsonify(access_token=access_token, refresh_token=refresh_token), 200
-    else:
+
+    except Exception as e:
         session.close()
-        return jsonify({"message": "Invalid credentials"}), 401
+        # General error handler for any other issues
+        return jsonify({"message": "An error occurred during login", "status": "error", "error": str(e)}), 500
+
 
 
 @app.route('/register', methods=['POST'])
