@@ -8,29 +8,31 @@ function LoginForm({ onLogin }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onLogin(credentials);
+    onLogin(credentials); // Pass credentials (username, password) to App.js for login
   };
 
   return (
     <form onSubmit={handleSubmit}>
       <div>
-        <label>Username</label>
+        <label>Username:</label>
         <input
           type="text"
           value={credentials.username}
           onChange={(e) =>
             setCredentials({ ...credentials, username: e.target.value })
           }
+          required
         />
       </div>
       <div>
-        <label>Password</label>
+        <label>Password:</label>
         <input
           type="password"
           value={credentials.password}
           onChange={(e) =>
             setCredentials({ ...credentials, password: e.target.value })
           }
+          required
         />
       </div>
       <button type="submit">Login</button>

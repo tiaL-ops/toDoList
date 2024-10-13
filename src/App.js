@@ -10,7 +10,6 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [token, setToken] = useState(localStorage.getItem('token') || null);
   const [showLogin, setShowLogin] = useState(true);
-  
 
   // Fetch tasks only when authenticated
   useEffect(() => {
@@ -43,9 +42,7 @@ function App() {
     fetchTasks();
   }, [token]);
 
-  
-
-  
+  // Handle login
   const handleLogin = async (credentials) => {
     try {
       const response = await fetch("http://127.0.0.1:5000/login", {
@@ -53,23 +50,22 @@ function App() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(credentials),
+        body: JSON.stringify(credentials), 
       });
   
-      const data = await response.json();  // Always parse the JSON response
+      const data = await response.json();
   
       if (!response.ok) {
-        throw new Error(`Login failed: ${data.message || 'Unknown error'}`);
+        throw new Error(`Login failed: ${data.message || "Unknown error"}`);
       }
   
       const jwtToken = data.access_token;
+      localStorage.setItem("token", jwtToken); 
+      setIsAuthenticated(true);
+      setToken(jwtToken); 
   
-      localStorage.setItem("token", jwtToken);  
-      setToken(jwtToken);                      
-      setIsAuthenticated(true);               
     } catch (error) {
-      console.error("Login error:", error);     // Log the detailed error
-      
+      console.error("Login error:", error);
     }
   };
 
@@ -188,29 +184,6 @@ function App() {
       console.error("Edit task error:", error);
     }
   };
-
-  // Fetch test data
-  useEffect(() => {
-    const fetchTestData = async () => {
-      try {
-        const response = await fetch("http://127.0.0.1:5000/test", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) throw new Error(`Failed to fetch test data: ${response.statusText}`);
-
-        const result = await response.json();
-        console.log("Test fetch result:", result);
-      } catch (error) {
-        console.error("Test fetch error:", error);
-      }
-    };
-
-    fetchTestData();
-  }, []);
 
   return (
     <div className="App">

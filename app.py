@@ -15,6 +15,9 @@ from flask_wtf.csrf import CSRFProtect
 from collections import deque
 from flask import send_from_directory 
 
+from db.user_models import db, User
+from db.models import Task
+
 # Load environment variables
 load_dotenv()
 
@@ -33,7 +36,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tasks.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize SQLAlchemy, SocketIO, and Migrate
-db = SQLAlchemy(app)  # Using SQLAlchemy as Flask's ORM
+db = SQLAlchemy(app)  #
 migrate = Migrate(app, db)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
@@ -42,32 +45,20 @@ app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=30)
 jwt = JWTManager(app)
 
-# Set up direct SQLAlchemy engine and scoped session if needed
-engine = create_engine('sqlite:///tasks.db')
-Session = scoped_session(sessionmaker(bind=engine))
 
-# Import your models (User and Task) after initializing db and app
-from db.user_models import User
-from db.models import Task
 
-# Initialize SocketIO with CORS enabled
-socketio = SocketIO(app, cors_allowed_origins="*")
-
-# Set up SQLite database connection and SQLAlchemy session
-engine = create_engine('sqlite:///tasks.db')
-Session = scoped_session(sessionmaker(bind=engine))
 
 
 @app.teardown_appcontext
 def shutdown_session(exception=None):
-    Session.remove()
+    db.session.remove()
 
 # Task routes
 @app.route('/api/tasks', methods=['GET'])
 #@jwt_required()
 def get_tasks():
-    session = Session()
-    all_tasks = session.query(Task).all()
+    session = db.session()
+    all_tasks = db.session.query(Task).all()
     task_data = [
         {
             'id': task.id,
@@ -84,7 +75,7 @@ def get_tasks():
 @app.route('/api/tasks', methods=['POST'])
 #@jwt_required()
 def create_task():
-    session = Session()
+    session =db.session()
     data = request.get_json()
     description = data.get('description')
     priority = data.get('priority', 'Medium')
@@ -127,7 +118,7 @@ def create_task():
 @app.route('/api/tasks/<int:task_id>', methods=['DELETE'])
 #@jwt_required()
 def delete_task_api(task_id):
-    session = Session()
+    session = db.session()
     # Find the task by ID
     task_to_delete = session.query(Task).filter_by(id=task_id).first()
 
@@ -148,7 +139,7 @@ def delete_task_api(task_id):
 @app.route('/tasks/<int:task_id>/complete', methods=['PUT'])
 #@jwt_required()
 def complete_task(task_id):
-    session = Session()
+    session = db.session()
     # Find the task by ID
     task_to_complete = session.query(Task).filter_by(id=task_id).first()
 
@@ -174,7 +165,7 @@ def complete_task(task_id):
 @app.route('/api/tasks/<int:task_id>', methods=['PUT'])
 #@jwt_required()
 def edit_task(task_id):
-    session = Session()
+    session = db.session()
     # Find the task by ID
     task_to_edit = session.query(Task).filter_by(id=task_id).first()
 
@@ -223,45 +214,17 @@ def edit_task(task_id):
 
 @app.route('/login', methods=['POST'])
 def login():
-    try:
-        data = request.get_json()
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
 
-        if not data or 'username' not in data or 'password' not in data:
-            return jsonify({"message": "Missing username or password"}), 400
+    user = User.query.filter_by(username=username).first()
 
-        username = data.get('username')
-        password = data.get('password')
+    if not user or not check_password_hash(user.password_hash, password):
+        return jsonify({"message": "Invalid username or password"}), 401
 
-        # Log the incoming request to see if it's processed correctly
-        app.logger.info(f"Login attempt for user: {username}")
-
-        # Fetch the user from the database
-        user = User.query.filter_by(username=username).first()
-
-        if not user:
-            app.logger.warning(f"Login failed: User '{username}' does not exist")
-            return jsonify({"message": "Invalid username"}), 401
-
-        # Check if the password matches
-        if not check_password_hash(user.password_hash, password):
-            app.logger.warning(f"Login failed: Incorrect password for user '{username}'")
-            return jsonify({"message": "Invalid password"}), 401
-
-        # Create JWT tokens
-        access_token = create_access_token(identity=user.id)
-        refresh_token = create_refresh_token(identity=user.id)
-
-        app.logger.info(f"Login successful for user: {username}")
-
-        # Return tokens
-        return jsonify(access_token=access_token, refresh_token=refresh_token), 200
-
-    except Exception as e:
-        app.logger.error(f"Error during login: {e}")
-        return jsonify({"message": "An error occurred during login", "error": str(e)}), 500
-
-
-
+    access_token = create_access_token(identity=user.id)
+    return jsonify(access_token=access_token), 200
 
 
 @app.route('/register', methods=['POST'])
@@ -293,7 +256,7 @@ def register():
 @app.route('/api/users', methods=['GET'])
 # @jwt_required()  
 def get_users():
-    session = Session()
+    session = db.session()
     try:
         # Query all users from the database
         users = session.query(User).all()
