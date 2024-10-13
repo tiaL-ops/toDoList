@@ -7,6 +7,7 @@ function RegisterForm({ onRegister }) {
   });
 
   const handleSubmit = (e) => {
+    console.log("Login button clicked");
     e.preventDefault();
     onRegister(credentials);
   };

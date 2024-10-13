@@ -7,6 +7,7 @@ function LoginForm({ onLogin }) {
   });
 
   const handleSubmit = (e) => {
+    console.log("Login button clicked");
     e.preventDefault();
     onLogin(credentials); // Pass credentials (username, password) to App.js for login
   };

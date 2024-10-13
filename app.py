@@ -11,6 +11,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.security import generate_password_hash
+from werkzeug.security import check_password_hash
+
 from flask_wtf.csrf import CSRFProtect
 from collections import deque
 from flask import send_from_directory 
@@ -212,20 +214,78 @@ def edit_task(task_id):
     finally:
         session.close()
 
+
+"""
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+
+    # Check for missing username or password
+    if not data.get('username') or not data.get('password'):
+        return jsonify({"message": "Missing username or password"}), 400
+
+    # Find the user in the database
+    user = User.query.filter_by(username=data['username']).first()
+
+    # Check if the user exists and password is correct
+    if not user or not check_password_hash(user.password_hash, data['password']):
+        return jsonify({"message": "Invalid username or password"}), 401
+
+    # Create JWT token
+    access_token = create_access_token(identity=user.id)
+    return jsonify(access_token=access_token), 200
+"""
+
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
 
+    if not username or not password:
+        return jsonify({"message": "Missing username or password"}), 400
+
     user = User.query.filter_by(username=username).first()
 
-    if not user or not check_password_hash(user.password_hash, password):
+    # Instead of checking hashed password, compare plain text password
+    if not user or user.password_hash != password:
         return jsonify({"message": "Invalid username or password"}), 401
 
     access_token = create_access_token(identity=user.id)
     return jsonify(access_token=access_token), 200
 
+
+@app.route('/register', methods=['POST'])
+@csrf.exempt  # Assuming you're not using CSRF for this route during testing
+def register():
+    data = request.get_json()
+
+    # Validate the input
+    if not data or 'username' not in data or 'password' not in data:
+        return jsonify({"message": "Missing username or password"}), 400
+
+    # Check if the username is already taken
+    existing_user = User.query.filter_by(username=data['username']).first()
+    if existing_user:
+        return jsonify({"message": "Username already taken"}), 400
+
+    # Store the password in plain text (for testing purposes only)
+    plain_password = data['password']
+
+    # Create a new user object with the plain text password
+    new_user = User(username=data['username'], password_hash=plain_password)
+
+    try:
+        # Add the new user to the database
+        db.session.add(new_user)
+        db.session.commit()
+
+        return jsonify({"message": "User registered with plain text password (for testing purposes only)"}), 201
+    except Exception as e:
+        db.session.rollback()  # Rollback in case of any error
+        return jsonify({"message": "Error registering user", "error": str(e)}), 500
+
+"""
 
 @app.route('/register', methods=['POST'])
 @csrf.exempt
@@ -252,7 +312,7 @@ def register():
         db.session.rollback()  # Rollback in case of any error
         return jsonify({"message": "Error registering user", "error": str(e)}), 500
 
-
+"""
 @app.route('/api/users', methods=['GET'])
 # @jwt_required()  
 def get_users():
