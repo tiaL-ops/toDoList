@@ -1,44 +1,43 @@
-
-
 # **ToDo List Application**
 
 ## **Project Overview**
-This is a full-stack **ToDo List application** that allows users to add, view, manage, and organize tasks. It features a **React frontend** for a responsive and dynamic UI and a **Flask backend** that handles task management, persistence, and **JWT-based authentication**. The project showcases a systematic approach to full-stack development, emphasizing **modern web development** best practices and gradual feature enhancements.
+This is a full-stack **ToDo List application** that allows users to create, view, manage, and organize tasks. It features a **React frontend** for a dynamic user interface and a **Flask backend** for handling task management, authentication, and persistence using **SQLite**. The app showcases how to build and connect a frontend and backend system, with a focus on **modern web development** practices such as **JWT authentication** and **real-time updates**.
 
 ---
 
 ## **Features**
-- **Task Management**: Create, update, delete, and complete tasks with attributes such as descriptions, priorities, categories, and deadlines.
-- **JWT Authentication**: Secure login system with JSON Web Tokens for user authentication.
-- **Persistent Storage**: Tasks are stored in a database (using **SQLite**) for long-term storage and retrieval.
-- **Real-Time Updates**: WebSocket (Socket.io) integration for live updates without refreshing the page.
-- **Responsive UI**: The frontend uses a responsive design with modern UX principles for both desktop and mobile.
+- **Task Management**: Create, update, delete, and complete tasks, with priorities, deadlines, and categories.
+- **User Authentication**: Secure login system using **JWT tokens** for authentication and access control.
+- **Persistent Storage**: Tasks are stored using **SQLite** for long-term storage and retrieval.
+- **Responsive UI**: Designed to work smoothly on both desktop and mobile devices using modern frontend technologies.
 
 ---
 
-## **Project Progress**
+## **Current Status & Bug**
+### **Current Bug**
+I'm currently debugging the **login functionality** where attempting to log in via the `/login` endpoint returns a `500 Internal Server Error`. The issue seems to occur when querying for the user in the database. 
 
-### **Milestones**
-| **Day** | **Objective**                             | **Completed**                                | **Technical Details / Notes**                                                                      |
-|---------|-------------------------------------------|----------------------------------------------|----------------------------------------------------------------------------------------------------|
-| **1-5**  | Initial Setup & Basic CRUD Functionality  | ✅ Implemented task creation, deletion, updates | Flask backend, basic React frontend, Git initiated, persistent storage using JSON.                 |
-| **6-10** | Task Priorities & Deadlines               | ✅ Task prioritization & deadlines added       | Sorting tasks by priority and deadlines, JSON replaced with SQLite, integrated SQLAlchemy ORM.      |
-| **11-15** | Real-Time Updates & UX/UI Enhancements   | ✅ Added WebSocket support & improved UI      | Real-time task updates using Socket.io, enhanced UX with animations, task filtering and sorting.    |
-| **16-20** | JWT Authentication & Security Features   | ✅ Integrated JWT-based authentication         | Secured routes for task management, implemented token-based login/logout, improved user experience. |
-
+### **Steps Taken to Debug the Login Issue**
+1. **Checked Flask Logs**: Found a `NoneType` error when querying for the user in the database.
+2. **Verified User in the Database**:
+   - Used Flask shell to check if the user existed: `User.query.filter_by(username="testuser").first()`.
+   - Discovered the user did not exist.
+3. **Added a New User**:
+   - Created the user manually in the database with a hashed password using Flask shell.
+4. **Re-tested Login**:
+   - The login still returned a `500 Internal Server Error`. More logging was added to troubleshoot further.
+   
 ---
 
 ## **Technologies Used**
-
-- **Frontend**: React, CSS Grid, Framer Motion (for animations)
+- **Frontend**: React, CSS
 - **Backend**: Flask, Flask-SQLAlchemy, Flask-JWT-Extended
-- **Database**: SQLite (future-proof for switching to other databases)
-- **Real-Time Communication**: WebSocket (Socket.io)
-- **Authentication**: JSON Web Tokens (JWT) for secure access
+- **Database**: SQLite
+- **Authentication**: JWT (JSON Web Tokens) for secure login and user authentication.
 
 ---
 
-## **Project Setup**
+## **How to Run the Project**
 
 ### **Backend (Flask)**
 
@@ -51,7 +50,7 @@ This is a full-stack **ToDo List application** that allows users to add, view, m
 2. **Set up the Python environment**:
    ```bash
    python -m venv venv
-   source venv/bin/activate  # On Windows use: venv\Scripts\activate
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
 3. **Install Dependencies**:
@@ -61,7 +60,7 @@ This is a full-stack **ToDo List application** that allows users to add, view, m
 
 4. **Run the Flask Server**:
    ```bash
-   python app.py
+   flask run
    ```
 
 ### **Frontend (React)**
@@ -79,41 +78,19 @@ This is a full-stack **ToDo List application** that allows users to add, view, m
 
 ---
 
-## **Key Achievements**
-
-### **JWT Authentication**
-- Implemented secure user authentication using **JWT** to protect API routes and ensure that only authenticated users can create, update, and delete tasks. This required deep integration of frontend and backend security layers and thorough testing.
-
-### **Real-Time Task Updates**
-- Integrated **WebSocket (Socket.io)** to enable real-time task updates, ensuring users can see changes (task creation, deletion, completion) across devices and browsers without requiring page reloads.
-
-### **UI/UX Overhaul**
-- Updated the UI/UX to ensure a smooth, responsive design for desktop and mobile, improving user experience through better animations, real-time feedback, and task filtering/sorting options.
-
-### **Database Integration**
-- Transitioned from JSON-based persistence to **SQLite**, implementing data migrations to ensure smooth updates. **SQLAlchemy ORM** was used to manage the database efficiently, laying the groundwork for future scalability.
-
----
-
 ## **API Endpoints**
-
-The Flask backend exposes several key endpoints for managing tasks:
-
-- `POST /api/login`: Authenticate users and issue JWT.
-- `GET /api/tasks`: Retrieve all tasks for the authenticated user.
-- `POST /api/tasks`: Create a new task.
-- `PUT /api/tasks/<task_id>`: Update task details.
-- `DELETE /api/tasks/<task_id>`: Delete a task.
-- `PUT /api/tasks/<task_id>/complete`: Mark a task as complete.
+- `POST /login`: Authenticate user and issue JWT token.
+- `GET /api/tasks`: Retrieve tasks (requires valid JWT).
+- `POST /api/tasks`: Create a new task (requires valid JWT).
 
 ---
 
-## **Future Improvements**
-- **Enhanced Security**: Implement password encryption, multi-factor authentication, and role-based access control.
-- **Task Collaboration**: Allow multiple users to collaborate on shared tasks with role-based permissions.
-- **Task Analytics**: Add statistics and charts to help users analyze their task completion trends over time.
-- **Push Notifications**: Integrate with third-party services to notify users of approaching deadlines or task updates.
+## **Future Plans**
+- **Fix Login Issue**: Resolve the `500 Internal Server Error` and ensure smooth user authentication.
+- **Enhance User Experience**: Improve the UI with better animations and real-time task updates.
+- **Add Notifications**: Push notifications for task deadlines.
 
 ---
 
-
+## **Conclusion**
+This project has been a journey of building a full-stack application using Flask and React. While there have been challenges, such as the current login issue, I am continuously learning and improving the app as I progress.
