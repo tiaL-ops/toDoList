@@ -30,8 +30,7 @@ app = Flask(__name__, static_folder='build')
 # Configure CORS to allow requests from the frontend
 CORS(app)
 
-# Initialize CSRF protection
-csrf = CSRFProtect(app)
+
 
 # Configure database URI
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tasks.db'
@@ -46,7 +45,8 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=30)
 jwt = JWTManager(app)
-
+# Initialize CSRF protection
+csrf = CSRFProtect(app)
 
 
 
@@ -237,10 +237,15 @@ def login():
 """
 
 @app.route('/login', methods=['POST'])
+@csrf.exempt 
 def login():
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
+
+    # Console log the username and password
+    print(f"Username: {username}")
+    print(f"Password: {password}")
 
     if not username or not password:
         return jsonify({"message": "Missing username or password"}), 400
@@ -249,10 +254,12 @@ def login():
 
     # Instead of checking hashed password, compare plain text password
     if not user or user.password_hash != password:
+        print("Invalid username or password")
         return jsonify({"message": "Invalid username or password"}), 401
 
     access_token = create_access_token(identity=user.id)
     return jsonify(access_token=access_token), 200
+
 
 
 @app.route('/register', methods=['POST'])
