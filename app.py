@@ -223,37 +223,44 @@ def edit_task(task_id):
 
 @app.route('/login', methods=['POST'])
 def login():
-    session = Session()
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-
     try:
-        # Check if the user exists
-        user = session.query(User).filter_by(username=username).first()
+        data = request.get_json()
+
+        if not data or 'username' not in data or 'password' not in data:
+            return jsonify({"message": "Missing username or password"}), 400
+
+        username = data.get('username')
+        password = data.get('password')
+
+        # Log the incoming request to see if it's processed correctly
+        app.logger.info(f"Login attempt for user: {username}")
+
+        # Fetch the user from the database
+        user = User.query.filter_by(username=username).first()
 
         if not user:
-            # Return a specific message if the user does not exist
-            session.close()
-            return jsonify({"message": "User does not exist", "status": "error"}), 404
+            app.logger.warning(f"Login failed: User '{username}' does not exist")
+            return jsonify({"message": "Invalid username"}), 401
 
         # Check if the password matches
-        if not user.check_password(password):
-            session.close()
-            return jsonify({"message": "Incorrect password", "status": "error"}), 401
+        if not check_password_hash(user.password_hash, password):
+            app.logger.warning(f"Login failed: Incorrect password for user '{username}'")
+            return jsonify({"message": "Invalid password"}), 401
 
-        # Generate access and refresh tokens
+        # Create JWT tokens
         access_token = create_access_token(identity=user.id)
         refresh_token = create_refresh_token(identity=user.id)
-        session.close()
 
-        # Return tokens on successful login
+        app.logger.info(f"Login successful for user: {username}")
+
+        # Return tokens
         return jsonify(access_token=access_token, refresh_token=refresh_token), 200
 
     except Exception as e:
-        session.close()
-        # General error handler for any other issues
-        return jsonify({"message": "An error occurred during login", "status": "error", "error": str(e)}), 500
+        app.logger.error(f"Error during login: {e}")
+        return jsonify({"message": "An error occurred during login", "error": str(e)}), 500
+
+
 
 
 
@@ -334,4 +341,3 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()  # Create tables if they don't exist
     socketio.run(app, debug=True, use_reloader=False)
-
