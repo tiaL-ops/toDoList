@@ -63,6 +63,7 @@ def get_tasks():
 
 @app.route('/api/tasks', methods=['POST'])
 def create_task():
+    current_user_id = get_jwt_identity()
     data = request.get_json()
     description = data.get('description')
     priority = data.get('priority', 'Medium')
@@ -79,7 +80,7 @@ def create_task():
         deadline = None
 
     # Create and add the task to the database
-    new_task = Task(description=description, priority=priority, category=category, deadline=deadline)
+    new_task = Task(description=description, priority=priority, category=category, deadline=deadline, user_id=current_user_id)
 
     try:
         db.session.add(new_task)
