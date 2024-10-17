@@ -17,8 +17,8 @@ from flask_wtf.csrf import CSRFProtect
 from collections import deque
 from flask import send_from_directory 
 
-from db.user_models import db, User
-from db.models import Task
+
+from db.models import Task , User,db
 
 # Load environment variables
 load_dotenv()
@@ -36,8 +36,7 @@ CORS(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tasks.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Initialize SQLAlchemy, SocketIO, and Migrate
-db = SQLAlchemy(app)  #
+
 migrate = Migrate(app, db)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
