@@ -27,6 +27,7 @@ CORS(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tasks.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+
 # Initialize db with app
 db.init_app(app)
 
@@ -34,7 +35,8 @@ migrate = Migrate(app, db)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 # JWT configuration
-app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY') or 'your-secret-key'
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=30)
 jwt = JWTManager(app)
 
@@ -45,8 +47,15 @@ csrf = CSRFProtect(app)
 def shutdown_session(exception=None):
     db.session.remove()
 
+
+@app.route('/test', methods=['GET'])
+def test():
+    return {"message": "App is running!"}
+
+
 # Task routes
 @app.route('/api/tasks', methods=['GET'])
+@csrf.exempt
 def get_tasks():
     all_tasks = db.session.query(Task).all()
     task_data = [
@@ -62,15 +71,20 @@ def get_tasks():
     return jsonify({'tasks': task_data})
 
 @app.route('/api/tasks', methods=['POST'])
+@csrf.exempt
+@jwt_required()  # Make sure the user is authenticated
 def create_task():
+    # Get the current user's ID from the JWT token
     current_user_id = get_jwt_identity()
+
+    # Get task data from the request body
     data = request.get_json()
     description = data.get('description')
     priority = data.get('priority', 'Medium')
     category = data.get('category', 'General')
     deadline = data.get('deadline', None)
 
-    # Handle the deadline conversion
+    # Handle deadline conversion from string to date object
     if deadline:
         try:
             deadline = datetime.strptime(deadline, '%Y-%m-%d').date()
@@ -79,21 +93,29 @@ def create_task():
     else:
         deadline = None
 
-    # Create and add the task to the database
-    new_task = Task(description=description, priority=priority, category=category, deadline=deadline, user_id=current_user_id)
+    # Create a new task for the current user
+    new_task = Task(
+        description=description,
+        priority=priority,
+        category=category,
+        deadline=deadline,
+        user_id=current_user_id  # Assign task to the authenticated user
+    )
 
     try:
+        # Add and commit the new task to the database
         db.session.add(new_task)
         db.session.commit()
 
-        # Emit task update to all clients
+        # Emit task update to all clients via socket
         socketio.emit('task_update', {
             'id': new_task.id,
             'description': new_task.description,
             'priority': new_task.priority,
             'category': new_task.category,
             'deadline': new_task.deadline.strftime('%Y-%m-%d') if new_task.deadline else None,
-            'completed': new_task.completed
+            'completed': new_task.completed,
+            'user_id': new_task.user_id  
         })
 
         return jsonify({"message": f"Task '{description}' added.", "status": "success"}), 201
@@ -101,7 +123,9 @@ def create_task():
         db.session.rollback()
         return jsonify({"message": "Error adding task.", "status": "error", "error": str(e)}), 500
 
+
 @app.route('/api/tasks/<int:task_id>', methods=['DELETE'])
+@csrf.exempt
 def delete_task_api(task_id):
     # Find the task by ID
     task_to_delete = db.session.query(Task).filter_by(id=task_id).first()
@@ -119,6 +143,7 @@ def delete_task_api(task_id):
     return jsonify({"message": f"Task '{task_to_delete.description}' deleted.", "status": "success"})
 
 @app.route('/tasks/<int:task_id>/complete', methods=['PUT'])
+@csrf.exempt
 def complete_task(task_id):
     # Find the task by ID
     task_to_complete = db.session.query(Task).filter_by(id=task_id).first()
@@ -140,6 +165,7 @@ def complete_task(task_id):
     return jsonify({"message": f"Task '{task_to_complete.description}' marked as complete.", "status": "success"})
 
 @app.route('/api/tasks/<int:task_id>', methods=['PUT'])
+@csrf.exempt
 def edit_task(task_id):
     # Find the task by ID
     task_to_edit = db.session.query(Task).filter_by(id=task_id).first()
@@ -235,6 +261,7 @@ def login():
     return jsonify(access_token=access_token), 200
 
 @app.route('/api/users', methods=['GET'])
+@csrf.exempt
 def get_users():
     try:
         # Query all users from the database
@@ -251,6 +278,7 @@ def get_users():
         return jsonify({"message": "Error fetching users.", "status": "error", "error": str(e)}), 500
 
 @app.route('/refresh', methods=['POST'])
+@csrf.exempt
 @jwt_required(refresh=True)
 def refresh():
     current_user = get_jwt_identity()

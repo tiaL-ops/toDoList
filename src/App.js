@@ -102,7 +102,7 @@ function App() {
   // Add a new task
   const addTask = async (task) => {
     try {
-      const response = await fetch("/api/tasks", {
+      const response = await fetch("http://127.0.0.1:5000/api/tasks", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
