@@ -37,7 +37,7 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 # JWT configuration
 app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=30)
+#app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=30)
 jwt = JWTManager(app)
 
 # Initialize CSRF protection
@@ -48,9 +48,6 @@ def shutdown_session(exception=None):
     db.session.remove()
 
 
-@app.route('/test', methods=['GET'])
-def test():
-    return {"message": "App is running!"}
 
 
 # Task routes
@@ -72,7 +69,7 @@ def get_tasks():
 
 @app.route('/api/tasks', methods=['POST'])
 @csrf.exempt
-@jwt_required()  # Make sure the user is authenticated
+@jwt_required()  
 def create_task():
     # Get the current user's ID from the JWT token
     current_user_id = get_jwt_identity()

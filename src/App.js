@@ -45,6 +45,7 @@ function App() {
   // Handle login
   const handleLogin = async (credentials) => {
     try {
+      console.log("Login button clicked");
       const response = await fetch("http://127.0.0.1:5000/login", {
         method: "POST",
         headers: {
@@ -52,7 +53,7 @@ function App() {
         },
         body: JSON.stringify(credentials), 
       });
-  
+      console.log("Login button clicked");
       const data = await response.json();
   
       if (!response.ok) {
@@ -98,28 +99,49 @@ function App() {
     setIsAuthenticated(false);
     setTasks([]);
   };
-
-  // Add a new task
-  const addTask = async (task) => {
-    try {
-      const response = await fetch("http://127.0.0.1:5000/api/tasks", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify(task),
-      });
-
-      if (!response.ok) throw new Error("Failed to add task");
-
-      const newTask = await response.json();
-      setTasks((prevTasks) => [...prevTasks, newTask]);
-    } catch (error) {
-      console.error("Add task error:", error);
+  const refreshToken = async () => {
+    const response = await fetch("http://127.0.0.1:5000/refresh", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`, 
+      },
+    });
+  
+    const data = await response.json();
+    if (response.ok) {
+      localStorage.setItem('token', data.access_token);
+      setToken(data.access_token);
+    } else {
+      console.error("Failed to refresh token:", data);
+      // Handle re-login
     }
   };
+  
 
+/*
+const addTask = async (task) => {
+  try {
+    // Log the token before making the request to check its value
+    console.log("Token being used:", token); 
+
+    const response = await fetch("http://127.0.0.1:5000/api/tasks", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,  
+      },
+      body: JSON.stringify(task),
+    });
+
+    if (!response.ok) throw new Error("Failed to add task");
+
+    const newTask = await response.json();
+    setTasks((prevTasks) => [...prevTasks, newTask]);
+  } catch (error) {
+    console.error("Add task error:", error);
+  }
+};
+*/
   // Delete a task
   const deleteTask = async (taskId) => {
     try {

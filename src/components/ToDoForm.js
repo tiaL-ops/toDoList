@@ -5,10 +5,14 @@ const ToDoForm = () => {
   const [priority, setPriority] = useState('Medium');
   const [category, setCategory] = useState('General');
   const [deadline, setDeadline] = useState('');
+  
+  // Retrieve token from localStorage
+  const token = localStorage.getItem('token'); 
+
 
   const handleSubmit = (event) => {
     event.preventDefault();
-
+    console.log('Add Task button clicked. Submitting task...');
     const taskData = {
       description,
       priority,
@@ -16,17 +20,30 @@ const ToDoForm = () => {
       deadline
     };
     
-    console.log('Submitting task:', taskData);
+    console.log('heyyyyy:', taskData);
+    
+    // Check if token exists
+    if (!token) {
+      console.error("No token found. User might not be authenticated.");
+      return;
+    }
+
     fetch('http://127.0.0.1:5000/api/tasks', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        "Authorization": `Bearer ${token}`,  // Include the token in the request
       },
       body: JSON.stringify(taskData),
     })
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Failed to add task');
+        }
+        return response.json();
+      })
       .then((data) => {
-        console.log('Success:', data);
+        console.log('Success: WHat', data);
         // Clear the form after successful submission
         setDescription('');
         setPriority('Medium');
@@ -38,8 +55,6 @@ const ToDoForm = () => {
       });
   };
 
-  
-
   return (
     <form onSubmit={handleSubmit}>
       <input
@@ -49,7 +64,7 @@ const ToDoForm = () => {
         onChange={(e) => setDescription(e.target.value)}
         required
       />
-       <div>
+      <div>
         <select value={priority} onChange={(e) => setPriority(e.target.value)}>
           <option value="High">High</option>
           <option value="Medium">Medium</option>
