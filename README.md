@@ -1,39 +1,47 @@
 # **ToDo List Application**
 
 ## **Project Overview**
-This is a full-stack **ToDo List application** that allows users to create, view, manage, and organize tasks. It features a **React frontend** for a dynamic user interface and a **Flask backend** for handling task management, authentication, and persistence using **SQLite**. The app showcases how to build and connect a frontend and backend system, with a focus on **modern web development** practices such as **JWT authentication** and **real-time updates**.
+This is a full-stack **ToDo List application** that allows users to manage tasks efficiently with a secure and dynamic user interface. The application uses **React** for the frontend and **Flask** for the backend, ensuring a smooth user experience while providing **JWT-based authentication** for user access control. Tasks are stored in an **SQLite** database, and real-time updates are facilitated via **Socket.IO**.
 
 ---
 
 ## **Features**
-- **Task Management**: Create, update, delete, and complete tasks, with priorities, deadlines, and categories.
-- **User Authentication**: Secure login system using **JWT tokens** for authentication and access control.
-- **Persistent Storage**: Tasks are stored using **SQLite** for long-term storage and retrieval.
-- **Responsive UI**: Designed to work smoothly on both desktop and mobile devices using modern frontend technologies.
+- **Task Management**: Users can create, update, delete, and complete tasks. Tasks are categorized by priority, deadlines, and status (completed/incomplete).
+- **User Authentication**: Secure **JWT-based login and registration** ensures user-specific task management.
+- **Persistent Data**: User tasks are stored and retrieved using **SQLite**, ensuring data persists across sessions.
+- **Real-time Updates**: Task updates are broadcast to the user in real-time using **Socket.IO**.
+- **Responsive UI**: The interface is responsive and user-friendly, ensuring a consistent experience across devices.
 
 ---
 
-## **Current Status & Bug**
-### **Current Bug**
-I'm currently debugging the **login functionality** where attempting to log in via the `/login` endpoint returns a `500 Internal Server Error`. The issue seems to occur when querying for the user in the database. 
+## **Technical Highlights**
 
-### **Steps Taken to Debug the Login Issue**
-1. **Checked Flask Logs**: Found a `NoneType` error when querying for the user in the database.
-2. **Verified User in the Database**:
-   - Used Flask shell to check if the user existed: `User.query.filter_by(username="testuser").first()`.
-   - Discovered the user did not exist.
-3. **Added a New User**:
-   - Created the user manually in the database with a hashed password using Flask shell.
-4. **Re-tested Login**:
-   - The login still returned a `500 Internal Server Error`. More logging was added to troubleshoot further.
-   
+### **Authentication with JWT**
+- **JWT Authentication** ensures that users can securely register, log in, and manage their tasks. The app stores the JWT token in `localStorage` and includes it in API requests for task management.
+- Each user's tasks are **scoped by their JWT token**, ensuring that only the logged-in user can view or modify their tasks.
+
+### **Task Operations**
+- **CRUD Operations** (Create, Read, Update, Delete) on tasks are secured using the **JWT token** to ensure only authenticated users can interact with their own tasks.
+- **Task Assignment**: Tasks are assigned to the currently logged-in user and filtered based on their authentication token. Users can only view and manage their own tasks.
+
+### **Real-time Updates with Socket.IO**
+- **Real-time Task Updates**: Whenever a task is added, edited, or deleted, real-time updates are pushed to the user using **Socket.IO** for instant feedback.
+  
+---
+
+## **Recent Fixes**
+
+- **Fixed Login/Registration Flow**: Resolved the login and registration issue by ensuring that user credentials are handled securely and tasks are correctly scoped to each user via JWT.
+- **Fixed Task Ownership**: Now tasks are tied to specific users based on their JWT token, ensuring that users can only view and manage their own tasks.
+  
 ---
 
 ## **Technologies Used**
 - **Frontend**: React, CSS
-- **Backend**: Flask, Flask-SQLAlchemy, Flask-JWT-Extended
+- **Backend**: Flask, Flask-SQLAlchemy, Flask-JWT-Extended, Flask-Migrate
 - **Database**: SQLite
-- **Authentication**: JWT (JSON Web Tokens) for secure login and user authentication.
+- **Real-time**: Socket.IO
+- **Authentication**: JSON Web Tokens (JWT) for secure login and access control
 
 ---
 
@@ -65,13 +73,17 @@ I'm currently debugging the **login functionality** where attempting to log in v
 
 ### **Frontend (React)**
 
-1. **Install Dependencies**:
+1. **Navigate to the frontend directory**:
    ```bash
    cd client
+   ```
+
+2. **Install Dependencies**:
+   ```bash
    npm install
    ```
 
-2. **Start the React Application**:
+3. **Start the React Application**:
    ```bash
    npm start
    ```
@@ -79,18 +91,16 @@ I'm currently debugging the **login functionality** where attempting to log in v
 ---
 
 ## **API Endpoints**
+
+- `POST /register`: Register a new user.
 - `POST /login`: Authenticate user and issue JWT token.
-- `GET /api/tasks`: Retrieve tasks (requires valid JWT).
+- `GET /api/tasks`: Retrieve tasks for the authenticated user (requires valid JWT).
 - `POST /api/tasks`: Create a new task (requires valid JWT).
+- `PUT /api/tasks/<task_id>`: Edit a specific task (requires valid JWT).
+- `DELETE /api/tasks/<task_id>`: Delete a specific task (requires valid JWT).
+- `PUT /tasks/<task_id>/complete`: Mark a task as complete (requires valid JWT).
 
 ---
 
-## **Future Plans**
-- **Fix Login Issue**: Resolve the `500 Internal Server Error` and ensure smooth user authentication.
-- **Enhance User Experience**: Improve the UI with better animations and real-time task updates.
-- **Add Notifications**: Push notifications for task deadlines.
 
----
 
-## **Conclusion**
-This project has been a journey of building a full-stack application using Flask and React. While there have been challenges, such as the current login issue, I am continuously learning and improving the app as I progress.
