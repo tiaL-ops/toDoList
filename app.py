@@ -50,11 +50,15 @@ def shutdown_session(exception=None):
 
 
 
-# Task routes
 @app.route('/api/tasks', methods=['GET'])
 @csrf.exempt
+@jwt_required() 
 def get_tasks():
-    all_tasks = db.session.query(Task).all()
+    current_user_id = get_jwt_identity()  
+
+    # Fetch tasks only for the current user
+    user_tasks = Task.query.filter_by(user_id=current_user_id).all()
+
     task_data = [
         {
             'id': task.id,
@@ -63,9 +67,10 @@ def get_tasks():
             'priority': task.priority,
             'category': task.category,
             'deadline': task.deadline.strftime('%Y-%m-%d') if task.deadline else None
-        } for task in all_tasks
+        } for task in user_tasks
     ]
     return jsonify({'tasks': task_data})
+
 
 @app.route('/api/tasks', methods=['POST'])
 @csrf.exempt
@@ -80,7 +85,7 @@ def create_task():
     priority = data.get('priority', 'Medium')
     category = data.get('category', 'General')
     deadline = data.get('deadline', None)
-
+    user_id=current_user_id 
     # Handle deadline conversion from string to date object
     if deadline:
         try:
@@ -123,12 +128,15 @@ def create_task():
 
 @app.route('/api/tasks/<int:task_id>', methods=['DELETE'])
 @csrf.exempt
+@jwt_required()  # Ensure user is authenticated
 def delete_task_api(task_id):
+    current_user_id = get_jwt_identity()  # Get current user from the token
+
     # Find the task by ID
-    task_to_delete = db.session.query(Task).filter_by(id=task_id).first()
+    task_to_delete = Task.query.filter_by(id=task_id, user_id=current_user_id).first()
 
     if not task_to_delete:
-        return jsonify({"message": "Task not found.", "status": "error"}), 404
+        return jsonify({"message": "Task not found or you don't have permission.", "status": "error"}), 404
 
     # Delete the task
     db.session.delete(task_to_delete)
@@ -138,6 +146,7 @@ def delete_task_api(task_id):
     socketio.emit('task_deleted', {'task_id': task_id})
 
     return jsonify({"message": f"Task '{task_to_delete.description}' deleted.", "status": "success"})
+
 
 @app.route('/tasks/<int:task_id>/complete', methods=['PUT'])
 @csrf.exempt
@@ -163,12 +172,15 @@ def complete_task(task_id):
 
 @app.route('/api/tasks/<int:task_id>', methods=['PUT'])
 @csrf.exempt
+@jwt_required()  
 def edit_task(task_id):
-    # Find the task by ID
-    task_to_edit = db.session.query(Task).filter_by(id=task_id).first()
+    current_user_id = get_jwt_identity()  
+
+    # Find the task by ID and ensure it belongs to the current user
+    task_to_edit = Task.query.filter_by(id=task_id, user_id=current_user_id).first()
 
     if not task_to_edit:
-        return jsonify({"message": "Task not found.", "status": "error"}), 404
+        return jsonify({"message": "Task not found or you don't have permission to edit.", "status": "error"}), 404
 
     # Get the updated data from the request
     data = request.get_json()
@@ -205,6 +217,7 @@ def edit_task(task_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({"message": "Error updating task.", "status": "error", "error": str(e)}), 500
+
 
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -274,6 +287,7 @@ def get_users():
         db.session.rollback()
         return jsonify({"message": "Error fetching users.", "status": "error", "error": str(e)}), 500
 
+
 @app.route('/refresh', methods=['POST'])
 @csrf.exempt
 @jwt_required(refresh=True)
@@ -282,13 +296,7 @@ def refresh():
     new_access_token = create_access_token(identity=current_user)
     return jsonify(access_token=new_access_token), 200
 
-@app.route('/test', methods=['GET', 'POST'])
-def test():
-    response = make_response(jsonify({"message": "Hello, CORS manually enabled!"}))
-    response.headers.add("Access-Control-Allow-Origin", "*")
-    response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
-    response.headers.add("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
-    return response
+
 
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
@@ -297,6 +305,7 @@ def serve_react(path):
         return send_from_directory(app.static_folder, path)
     else:
         return send_from_directory(app.static_folder, 'index.html')
+
 
 if __name__ == '__main__':
     with app.app_context():
