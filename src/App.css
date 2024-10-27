@@ -1,13 +1,130 @@
-/* General body styling */
-body {
+
+
+/* Basic Reset */
+* {
   margin: 0;
   padding: 0;
-  font-family: 'Roboto', sans-serif;
-  background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
+  box-sizing: border-box;
+}
+
+/* Body Styling */
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f7f6;
+  color: #333;
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
-  overflow: hidden;
 }
 
+/* App Container */
+.App {
+  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 500px;
+  padding: 20px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+/* Header */
+.App h1 {
+  font-size: 2rem;
+  color: #4CAF50;
+  margin-bottom: 20px;
+}
+
+/* Button Styles */
+button {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #45a049;
+}
+
+button:focus {
+  outline: none;
+}
+
+/* Form Styling */
+.ToDoForm,
+.LoginForm,
+.RegisterForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+input[type="text"],
+input[type="password"] {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+  border-color: #4CAF50;
+  outline: none;
+  box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+}
+
+/* ToDo List Styling */
+.ToDoList {
+  list-style: none;
+  padding: 0;
+}
+
+.ToDoList li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f9f9f9;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #eee;
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.ToDoList li:hover {
+  background-color: #f1f1f1;
+}
+
+.task-title {
+  flex: 1;
+  text-align: left;
+}
+
+.task-actions button {
+  margin-left: 10px;
+  background-color: #d9534f;
+}
+
+.task-actions button:hover {
+  background-color: #c9302c;
+}
+
+.auth-toggle {
+  color: #4CAF50;
+  cursor: pointer;
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+.auth-toggle:hover {
+  text-decoration: underline;
+}
